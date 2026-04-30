@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SSOD — Welcome</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:       #050d1a;
+      --panel:    #0a1628;
+      --border:   #0e3a6e;
+      --cyan:     #00d4ff;
+      --green:    #00ff88;
+      --text:     #c8e0f4;
+      --text-dim: #5a7a99;
+      --font-head: 'Rajdhani', sans-serif;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-body: 'Exo 2', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+
+    body {
+      background: var(--bg);
+      font-family: var(--font-body);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .grid-bg {
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      animation: gridMove 20s linear infinite;
+      pointer-events: none; z-index: 0;
+    }
+    @keyframes gridMove {
+      0%   { background-position: 0 0; }
+      100% { background-position: 40px 40px; }
+    }
+
+    .scan-line {
+      position: fixed; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+      animation: scan 6s linear infinite;
+      opacity: 0.25; pointer-events: none; z-index: 999;
+    }
+    @keyframes scan {
+      0%   { top: 0; }
+      100% { top: 100vh; }
+    }
+
+    .top-header {
+      position: relative; z-index: 10;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 32px 0 20px;
+      border-bottom: 1px solid rgba(14,58,110,0.5);
+      animation: fadeDown 0.8s ease forwards;
+    }
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .logo-title {
+      font-family: var(--font-head);
+      font-size: 52px; font-weight: 700;
+      letter-spacing: 12px; color: var(--cyan);
+      text-shadow: 0 0 40px rgba(0,212,255,0.5);
+      line-height: 1;
+    }
+    .logo-sub {
+      font-family: var(--font-mono);
+      font-size: 11px; letter-spacing: 3px;
+      color: var(--text-dim); margin-top: 8px;
+      text-transform: uppercase;
+    }
+    .logo-tagline {
+      font-family: var(--font-mono);
+      font-size: 11px; letter-spacing: 2px;
+      color: rgba(0,212,255,0.4); margin-top: 6px;
+    }
+
+    .split {
+      position: relative; z-index: 10;
+      display: flex; flex: 1; overflow: hidden;
+    }
+
+    .side {
+      flex: 1; display: flex;
+      flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 40px; position: relative;
+      overflow: hidden; cursor: pointer;
+      transition: flex 0.6s cubic-bezier(0.4,0,0.2,1);
+      text-decoration: none;
+    }
+    .side:hover { flex: 1.4; }
+
+    .side-new {
+      background: linear-gradient(135deg, rgba(0,212,255,0.04) 0%, transparent 60%);
+      border-right: 1px solid var(--border);
+    }
+    .side-new::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 30% 50%, rgba(0,212,255,0.08) 0%, transparent 60%);
+      pointer-events: none; transition: opacity 0.4s; opacity: 0;
+    }
+    .side-new:hover::before { opacity: 1; }
+
+    .side-old {
+      background: linear-gradient(225deg, rgba(0,255,136,0.04) 0%, transparent 60%);
+    }
+    .side-old::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 70% 50%, rgba(0,255,136,0.08) 0%, transparent 60%);
+      pointer-events: none; transition: opacity 0.4s; opacity: 0;
+    }
+    .side-old:hover::before { opacity: 1; }
+
+    .divider {
+      position: absolute; left: 50%; top: 0; bottom: 0;
+      width: 1px; background: var(--border);
+      z-index: 20; pointer-events: none;
+    }
+    .divider-label {
+      position: absolute; left: 50%; top: 50%;
+      transform: translate(-50%,-50%);
+      background: var(--bg); border: 1px solid var(--border);
+      padding: 10px 14px; font-family: var(--font-mono);
+      font-size: 11px; color: var(--text-dim);
+      letter-spacing: 2px; z-index: 21; white-space: nowrap;
+    }
+
+    .side-icon {
+      font-size: 64px; margin-bottom: 24px;
+      animation: floatIcon 4s ease-in-out infinite;
+      position: relative; z-index: 1;
+    }
+    .side-new .side-icon { animation-delay: 0s; }
+    .side-old .side-icon { animation-delay: 0.5s; }
+    @keyframes floatIcon {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-10px); }
+    }
+
+    .side-label {
+      font-family: var(--font-head);
+      font-size: 42px; font-weight: 700;
+      letter-spacing: 4px; text-transform: uppercase;
+      margin-bottom: 12px; line-height: 1;
+      position: relative; z-index: 1; transition: all 0.3s;
+    }
+    .side-new .side-label { color: var(--cyan); text-shadow: 0 0 30px rgba(0,212,255,0.3); }
+    .side-old .side-label { color: var(--green); text-shadow: 0 0 30px rgba(0,255,136,0.3); }
+    .side-new:hover .side-label { text-shadow: 0 0 50px rgba(0,212,255,0.7); }
+    .side-old:hover .side-label { text-shadow: 0 0 50px rgba(0,255,136,0.7); }
+
+    .side-desc {
+      font-family: var(--font-body); font-size: 14px;
+      color: var(--text-dim); text-align: center;
+      line-height: 1.7; max-width: 320px;
+      margin-bottom: 32px; position: relative; z-index: 1;
+    }
+
+    .side-features {
+      display: flex; flex-direction: column;
+      gap: 10px; margin-bottom: 36px;
+      position: relative; z-index: 1;
+    }
+    .feature-item {
+      display: flex; align-items: center; gap: 10px;
+      font-family: var(--font-mono); font-size: 11px;
+      color: var(--text-dim); letter-spacing: 1px;
+    }
+    .feature-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%; flex-shrink: 0;
+    }
+    .side-new .feature-dot { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
+    .side-old .feature-dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+    .side-btn {
+      position: relative; z-index: 1;
+      padding: 14px 40px; font-family: var(--font-head);
+      font-size: 18px; font-weight: 600;
+      letter-spacing: 4px; text-transform: uppercase;
+      border: 2px solid; cursor: pointer;
+      overflow: hidden; transition: all 0.3s;
+      clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+    }
+    .side-btn::before {
+      content: ''; position: absolute; inset: 0;
+      transform: translateX(-100%); transition: transform 0.3s;
+    }
+    .side-btn span { position: relative; z-index: 1; }
+
+    .side-new .side-btn { border-color: var(--cyan); color: var(--cyan); background: rgba(0,212,255,0.05); }
+    .side-new .side-btn::before { background: var(--cyan); }
+    .side-new:hover .side-btn::before { transform: translateX(0); }
+    .side-new:hover .side-btn { color: #000; }
+
+    .side-old .side-btn { border-color: var(--green); color: var(--green); background: rgba(0,255,136,0.05); }
+    .side-old .side-btn::before { background: var(--green); }
+    .side-old:hover .side-btn::before { transform: translateX(0); }
+    .side-old:hover .side-btn { color: #000; }
+
+    .corner { position: fixed; width: 40px; height: 40px; pointer-events: none; z-index: 5; }
+    .corner-tl { top: 16px; left: 16px; border-top: 2px solid var(--cyan); border-left: 2px solid var(--cyan); }
+    .corner-tr { top: 16px; right: 16px; border-top: 2px solid var(--cyan); border-right: 2px solid var(--cyan); }
+    .corner-bl { bottom: 16px; left: 16px; border-bottom: 2px solid var(--cyan); border-left: 2px solid var(--cyan); }
+    .corner-br { bottom: 16px; right: 16px; border-bottom: 2px solid var(--cyan); border-right: 2px solid var(--cyan); }
+
+    .bottom-bar {
+      position: relative; z-index: 10;
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 10px 24px;
+      border-top: 1px solid rgba(14,58,110,0.5);
+      font-family: var(--font-mono); font-size: 10px;
+      color: var(--text-dim); letter-spacing: 1px;
+    }
+    .bottom-bar span { color: var(--cyan); }
+    .bottom-status { display: flex; align-items: center; gap: 8px; }
+    .status-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green); box-shadow: 0 0 6px var(--green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    .particles { position: fixed; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
+    .particle {
+      position: absolute; width: 2px; height: 2px;
+      border-radius: 50%;
+      animation: particleFloat linear infinite; opacity: 0;
+    }
+    @keyframes particleFloat {
+      0%   { transform: translateY(100vh); opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 1; }
+      100% { transform: translateY(-100px); opacity: 0; }
+    }
+
+    .side-new .glow-line {
+      position: absolute; left: 0; top: 0; bottom: 0;
+      width: 2px; background: var(--cyan);
+      box-shadow: 0 0 20px var(--cyan);
+      transform: scaleY(0); transform-origin: top;
+      transition: transform 0.4s ease;
+    }
+    .side-new:hover .glow-line { transform: scaleY(1); }
+
+    .side-old .glow-line {
+      position: absolute; right: 0; top: 0; bottom: 0;
+      width: 2px; background: var(--green);
+      box-shadow: 0 0 20px var(--green);
+      transform: scaleY(0); transform-origin: top;
+      transition: transform 0.4s ease;
+    }
+    .side-old:hover .glow-line { transform: scaleY(1); }
+
+    .side-content {
+      display: flex; flex-direction: column;
+      align-items: center; position: relative; z-index: 1;
+      animation: fadeUp 1s ease forwards; opacity: 0;
+    }
+    .side-new .side-content { animation-delay: 0.3s; }
+    .side-old .side-content { animation-delay: 0.5s; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="grid-bg"></div>
+  <div class="scan-line"></div>
+  <div class="corner corner-tl"></div>
+  <div class="corner corner-tr"></div>
+  <div class="corner corner-bl"></div>
+  <div class="corner corner-br"></div>
+  <div class="particles" id="particles"></div>
+
+  <!-- Top header -->
+  <div class="top-header">
+    <div class="logo-title">SSOD</div>
+    <div class="logo-sub">Smart Secure Operations & Performance Dashboard</div>
+    <div class="logo-tagline">CENTRALIZED MONITORING · SECURITY · PERFORMANCE </div>
+  </div>
+
+  <!-- Split screen -->
+  <div class="split">
+    <div class="divider"></div>
+    <div class="divider-label">— OR —</div>
+
+    <!-- New Friend -->
+    <a class="side side-new" href="dashboard.html" onclick="setDemo()">
+      <div class="glow-line"></div>
+      <div class="side-content">
+        <div class="side-icon">🌐</div>
+        <div class="side-label">New Friend ?</div>
+        <div class="side-desc">
+          First time here? Explore the full SSOD dashboard in demo mode —
+          no account needed. See everything the platform can do before you commit.
+        </div>
+        <div class="side-features">
+          <div class="feature-item"><div class="feature-dot"></div>INSTANT ACCESS — NO REGISTRATION</div>
+          <div class="feature-item"><div class="feature-dot"></div>FULL DASHBOARD PREVIEW</div>
+          <div class="feature-item"><div class="feature-dot"></div>LIVE METRICS & ALERTS VIEW</div>
+          <div class="feature-item"><div class="feature-dot"></div>CREATE ACCOUNT WHEN READY</div>
+        </div>
+        <div class="side-btn"><span>⚡ EXPLORE DEMO</span></div>
+      </div>
+    </a>
+
+    <!-- Old Friend -->
+    <a class="side side-old" href="login.html">
+      <div class="glow-line"></div>
+      <div class="side-content">
+        <div class="side-icon">🔐</div>
+        <div class="side-label">Old Friend ?</div>
+        <div class="side-desc">
+          Welcome back. Access your secure SSOD environment with your
+          credentials and pick up right where you left off.
+        </div>
+        <div class="side-features">
+          <div class="feature-item"><div class="feature-dot"></div>SECURE JWT AUTHENTICATION</div>
+          <div class="feature-item"><div class="feature-dot"></div>ROLE-BASED ACCESS CONTROL</div>
+          <div class="feature-item"><div class="feature-dot"></div>FULL SYSTEM MANAGEMENT</div>
+          <div class="feature-item"><div class="feature-dot"></div>PERSONALIZED DASHBOARD</div>
+        </div>
+        <div class="side-btn"><span>🔑 LOGIN</span></div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Bottom bar -->
+  <div class="bottom-bar">
+    <div>SSOD v1.0.0 &nbsp;|&nbsp; <span>SYLVAH™</span> &nbsp;|&nbsp; © 2026</div>
+    <div class="bottom-status">
+      <div class="status-dot"></div>
+      <span>ALL SYSTEMS OPERATIONAL</span>
+    </div>
+    <div>ENCRYPTION: <span>AES-256</span> &nbsp;|&nbsp; PROTOCOL: <span>SECURE</span></div>
+  </div>
+
+  <script>
+    const _indexSignature = {
+        id: "SSOD-SYL-2026-H1K4",
+        author: "SYLVAH™",
+        created: "2026-04-05",
+        version: "1.0.0",
+        module: "index.html",
+        hash: "f8c3a6d2e1b9f4c7"
+    };
+    const _indexMeta = {
+        catalogId: "SYL-INDEX-001",
+        sourceCode: "SSOD2026",
+        revision: "SYL-v1"
+    };
+
+    function setDemo() {
+      // Clear any existing real session first
+      localStorage.removeItem("ssod_token");
+      localStorage.removeItem("ssod_user");
+      // Set demo flag — no fake token, no fake user stored
+      localStorage.setItem("ssod_demo", "true");
+    }
+
+    function createParticles() {
+      const container = document.getElementById("particles");
+      const colors = ["#00d4ff", "#00ff88", "#0099bb"];
+      for (let i = 0; i < 30; i++) {
+        const p = document.createElement("div");
+        p.className = "particle";
+        p.style.left = Math.random() * 100 + "vw";
+        p.style.background = colors[Math.floor(Math.random() * colors.length)];
+        p.style.animationDuration = (8 + Math.random() * 12) + "s";
+        p.style.animationDelay = (Math.random() * 10) + "s";
+        p.style.width = p.style.height = (Math.random() > 0.5 ? "2px" : "3px");
+        container.appendChild(p);
+      }
+    }
+
+    createParticles();
+    window.__ssod_auth__ = _indexSignature;
+  </script>
+</body>
+</html>

@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>SSOD | Performance Monitor</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <style>
+    
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-deep:          #0a0f1c;
+      --sidebar-bg:       #0e1322;
+      --card-bg:          #12172b;
+      --card-elevated:    #171e34;
+      --border-glow:      #2a3a60;
+      --border-subtle:    #1f2a40;
+      --text-primary:     #eef2ff;
+      --text-secondary:   #8e9bb5;
+      --text-muted:       #5b6b8c;
+
+      --cyan-accent:      #00e0ff;
+      --green-accent:     #1effbc;
+      --orange-accent:    #ff9f4a;
+      --red-accent:       #ff4d6d;
+      --purple-accent:    #b77cff;
+      --gold-accent:      #ffd966;
+
+      --font-display:     'Inter', sans-serif;
+      --font-mono:        'JetBrains Mono', monospace;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg-deep);
+      font-family: var(--font-display);
+      color: var(--text-primary);
+    }
+
+    /* Subtle grid background */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,224,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,224,255,0.02) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Scan line — same as dashboard */
+    .scan-line {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 3px;
+      background: linear-gradient(90deg, transparent, var(--cyan-accent), transparent);
+      opacity: 0.3;
+      pointer-events: none;
+      z-index: 999;
+      animation: scanMove 10s linear infinite;
+    }
+    @keyframes scanMove { 0% { top: 0; } 100% { top: 100%; } }
+
+    /* =====================================================
+      TOPBAR — identical to dashboard.html
+    ===================================================== */
+    .topbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 64px;
+      background: rgba(14,19,34,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-glow);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      z-index: 100;
+    }
+    .logo-area { display: flex; align-items: baseline; gap: 12px; }
+    .logo {
+      font-family: var(--font-mono);
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      background: linear-gradient(135deg, var(--cyan-accent), #6c8cff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 6px rgba(0,224,255,0.3);
+      text-decoration: none;
+    }
+    .badge-sys {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      background: rgba(0,224,255,0.1);
+      border: 1px solid var(--cyan-accent);
+      padding: 2px 8px;
+      border-radius: 20px;
+      color: var(--cyan-accent);
+      letter-spacing: 1px;
+    }
+    .system-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(30,40,60,0.5);
+      padding: 6px 18px;
+      border-radius: 40px;
+      border-left: 2px solid var(--green-accent);
+    }
+    .status-led {
+      width: 8px; height: 8px;
+      background: var(--green-accent);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--green-accent);
+      animation: pulseG 1.8s infinite;
+    }
+    @keyframes pulseG { 0%,100%{opacity:1} 50%{opacity:.35} }
+    .time-stamp { font-family: var(--font-mono); font-size: 13px; color: var(--text-secondary); }
+    .admin-profile { display: flex; align-items: center; gap: 20px; }
+    .admin-name { font-size: 13px; font-weight: 500; letter-spacing: 0.5px; }
+    .logout-btn {
+      background: transparent;
+      border: 1px solid var(--border-glow);
+      color: var(--text-secondary);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      transition: .2s;
+      text-decoration: none;
+    }
+    .logout-btn:hover { border-color: var(--red-accent); color: var(--red-accent); }
+
+    /* =====================================================
+      SIDEBAR — identical to dashboard.html
+    ===================================================== */
+    .sidebar {
+      position: fixed;
+      top: 64px; left: 0;
+      width: 260px;
+      height: calc(100vh - 64px);
+      background: rgba(14,19,34,0.97);
+      border-right: 1px solid var(--border-subtle);
+      padding: 28px 0;
+      overflow-y: auto;
+      z-index: 90;
+    }
+    .nav-section { margin-bottom: 28px; }
+    .nav-caption {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--text-muted);
+      padding: 0 24px;
+      margin-bottom: 12px;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 24px;
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border-left: 3px solid transparent;
+      transition: all .2s;
+      text-decoration: none;
+    }
+    .nav-item i { width: 22px; font-size: 1rem; color: var(--cyan-accent); }
+    .nav-item:hover, .nav-item.active {
+      background: rgba(0,224,255,0.08);
+      color: var(--cyan-accent);
+      border-left-color: var(--cyan-accent);
+    }
+    .alert-badge {
+      margin-left: auto;
+      background: var(--red-accent);
+      color: #fff;
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 30px;
+      font-weight: bold;
+    }
+
+    /* =====================================================
+      MAIN CONTENT AREA
+    ===================================================== */
+    .main {
+      margin-left: 260px;
+      margin-top: 64px;
+      height: calc(100vh - 64px);
+      overflow-y: auto;
+      padding: 24px 28px;
+      position: relative;
+      z-index: 2;
+    }
+    .main::-webkit-scrollbar { width: 5px; }
+    .main::-webkit-scrollbar-track { background: transparent; }
+    .main::-webkit-scrollbar-thumb { background: var(--border-glow); border-radius: 10px; }
+
+    /* =====================================================
+      PAGE HEADER
+    ===================================================== */
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 22px;
+    }
+    .page-title-group { display: flex; align-items: center; gap: 14px; }
+    .page-icon {
+      width: 44px; height: 44px;
+      background: rgba(0,224,255,0.08);
+      border: 1px solid var(--cyan-accent);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--cyan-accent);
+      font-size: 18px;
+      box-shadow: 0 0 14px rgba(0,224,255,0.15);
+    }
+    .page-title {
+      font-family: var(--font-mono);
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--text-primary);
+    }
+    .page-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+      letter-spacing: 0.5px;
+    }
+    .header-controls { display: flex; align-items: center; gap: 10px; }
+    .ctrl-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      transition: .2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .ctrl-btn:hover { border-color: var(--cyan-accent); color: var(--cyan-accent); }
+    .ctrl-btn.active { border-color: var(--cyan-accent); color: var(--cyan-accent); background: rgba(0,224,255,0.07); }
+    .live-indicator {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(30,255,188,0.07);
+      border: 1px solid var(--green-accent);
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--green-accent);
+    }
+    .live-dot {
+      width: 7px; height: 7px;
+      background: var(--green-accent);
+      border-radius: 50%;
+      box-shadow: 0 0 6px var(--green-accent);
+      animation: pulseG 1.4s infinite;
+    }
+
+    /* =====================================================
+      TOP KPI STRIP — 4 metric cards
+    ===================================================== */
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 18px 20px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color .2s;
+    }
+    .kpi-card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 2px;
+    }
+    .kpi-card.cpu::before  { background: linear-gradient(90deg, var(--cyan-accent), transparent); }
+    .kpi-card.ram::before  { background: linear-gradient(90deg, var(--green-accent), transparent); }
+    .kpi-card.disk::before { background: linear-gradient(90deg, var(--orange-accent), transparent); }
+    .kpi-card.health::before { background: linear-gradient(90deg, var(--purple-accent), transparent); }
+
+    .kpi-card:hover { border-color: var(--border-glow); }
+
+    .kpi-label {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .kpi-value {
+      font-family: var(--font-mono);
+      font-size: 34px;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .kpi-card.cpu  .kpi-value { color: var(--cyan-accent); text-shadow: 0 0 12px rgba(0,224,255,0.4); }
+    .kpi-card.ram  .kpi-value { color: var(--green-accent); text-shadow: 0 0 12px rgba(30,255,188,0.4); }
+    .kpi-card.disk .kpi-value { color: var(--orange-accent); text-shadow: 0 0 12px rgba(255,159,74,0.4); }
+    .kpi-card.health .kpi-value { color: var(--purple-accent); text-shadow: 0 0 12px rgba(183,124,255,0.4); }
+
+    .kpi-delta {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      display: flex; align-items: center; gap: 4px;
+    }
+    .delta-up   { color: var(--red-accent); }
+    .delta-down { color: var(--green-accent); }
+    .delta-ok   { color: var(--text-muted); }
+
+    .kpi-sparkline {
+      position: absolute;
+      bottom: 12px; right: 12px;
+      opacity: 0.5;
+    }
+
+    .mini-bar-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 32px;
+    }
+    .mini-bar {
+      width: 5px;
+      border-radius: 2px;
+      background: var(--cyan-accent);
+      transition: height .4s ease;
+    }
+
+    /* =====================================================
+      CHARTS ROW — 3 line charts side by side
+    ===================================================== */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .chart-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 18px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .chart-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .chart-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+    .chart-title.cpu-title   { color: var(--cyan-accent); }
+    .chart-title.ram-title   { color: var(--green-accent); }
+    .chart-title.disk-title  { color: var(--orange-accent); }
+
+    .chart-current {
+      font-family: var(--font-mono);
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .chart-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+    .chart-badge {
+      font-size: 9px;
+      font-family: var(--font-mono);
+      padding: 3px 8px;
+      border-radius: 20px;
+      border: 1px solid;
+    }
+    .badge-normal  { color: var(--green-accent); border-color: var(--green-accent); background: rgba(30,255,188,0.07); }
+    .badge-warning { color: var(--orange-accent); border-color: var(--orange-accent); background: rgba(255,159,74,0.07); }
+    .badge-critical{ color: var(--red-accent); border-color: var(--red-accent); background: rgba(255,77,109,0.07); }
+
+    .chart-wrap { height: 120px; position: relative; }
+
+    /* Threshold line annotation label */
+    .thresh-label {
+      position: absolute;
+      right: 0;
+      font-size: 9px;
+      font-family: var(--font-mono);
+      color: var(--orange-accent);
+      opacity: 0.7;
+    }
+
+    /* =====================================================
+      BOTTOM ROW — gauge panels + data table
+    ===================================================== */
+    .bottom-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1.4fr;
+      gap: 16px;
+    }
+
+    /* Radial Gauge Card */
+    .gauge-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 18px 20px;
+    }
+    .gauge-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .gauge-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+    .gauge-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+    .gauge-wrap { position: relative; width: 120px; height: 70px; }
+    .gauge-wrap canvas { display: block; }
+    .gauge-center-label {
+      position: absolute;
+      bottom: 2px;
+      width: 100%;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 16px;
+      font-weight: 700;
+      pointer-events: none;
+    }
+
+    .gauge-stats {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .gauge-stat {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 8px;
+      text-align: center;
+    }
+    .gauge-stat-label {
+      font-size: 9px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      margin-bottom: 3px;
+    }
+    .gauge-stat-val {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    /* Health Score Card */
+    .health-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 18px 20px;
+    }
+    .health-ring-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .health-ring-wrap { position: relative; width: 130px; height: 130px; }
+    .health-ring-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .health-score-num {
+      font-family: var(--font-mono);
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--purple-accent);
+      text-shadow: 0 0 10px rgba(183,124,255,0.5);
+    }
+    .health-score-denom {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+    .health-breakdown {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .health-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+    }
+    .health-row-label {
+      width: 60px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      font-size: 10px;
+    }
+    .h-bar {
+      flex: 1;
+      height: 5px;
+      background: var(--border-subtle);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .h-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width .6s ease;
+    }
+    .health-row-val {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      width: 34px;
+      text-align: right;
+    }
+
+    /* Data Table Card */
+    .table-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+    }
+    .table-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .table-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+    .export-btn {
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-size: 10px;
+      font-family: var(--font-mono);
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 5px;
+      transition: .2s;
+    }
+    .export-btn:hover { border-color: var(--cyan-accent); color: var(--cyan-accent); }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      flex: 1;
+    }
+    .data-table thead th {
+      text-align: left;
+      padding: 6px 8px;
+      color: var(--text-muted);
+      font-size: 10px;
+      letter-spacing: 1px;
+      border-bottom: 1px solid var(--border-subtle);
+      font-weight: 500;
+    }
+    .data-table tbody tr {
+      border-bottom: 1px solid rgba(31,42,64,0.5);
+      transition: background .15s;
+    }
+    .data-table tbody tr:hover { background: rgba(0,224,255,0.03); }
+    .data-table tbody td {
+      padding: 8px 8px;
+      color: var(--text-secondary);
+      font-size: 10px;
+    }
+    .td-mono { font-family: var(--font-mono); }
+    .td-cyan   { color: var(--cyan-accent); }
+    .td-green  { color: var(--green-accent); }
+    .td-orange { color: var(--orange-accent); }
+    .td-red    { color: var(--red-accent); }
+    .td-purple { color: var(--purple-accent); }
+
+    .status-pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 9px;
+      font-weight: 600;
+    }
+    .pill-ok   { background: rgba(30,255,188,0.1); color: var(--green-accent); border: 1px solid rgba(30,255,188,0.3); }
+    .pill-warn { background: rgba(255,159,74,0.1); color: var(--orange-accent); border: 1px solid rgba(255,159,74,0.3); }
+    .pill-crit { background: rgba(255,77,109,0.1); color: var(--red-accent); border: 1px solid rgba(255,77,109,0.3); }
+
+    /* =====================================================
+      THRESHOLD BREACH BANNER
+    ===================================================== */
+    .breach-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .breach-item {
+      flex: 1;
+      background: var(--card-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+      transition: border-color .2s;
+    }
+    .breach-item.warn { border-left: 3px solid var(--orange-accent); }
+    .breach-item.ok   { border-left: 3px solid var(--green-accent); }
+    .breach-item.info { border-left: 3px solid var(--cyan-accent); }
+    .breach-icon { font-size: 16px; }
+    .breach-icon.warn   { color: var(--orange-accent); }
+    .breach-icon.ok     { color: var(--green-accent); }
+    .breach-icon.info   { color: var(--cyan-accent); }
+    .breach-label { color: var(--text-secondary); line-height: 1.4; }
+    .breach-label strong { color: var(--text-primary); display: block; font-size: 12px; }
+    .breach-time {
+      margin-left: auto;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    /* Panel shared header style */
+    .panel-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .panel-h3 {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .panel-h3 i { color: var(--cyan-accent); }
+  </style>
+</head>
+<body>
+
+<script>
+  const _perfSignature = {
+    id: "SSOD-SYL-2026-P3RF",
+    author: "SYLVAH™",
+    created: "2026-04-21",
+    version: "1.0.0",
+    module: "performance.html",
+    hash: "p3rf0rm4nc3m0n1t0r"
+  };
+  window.__ssod_auth__ = _perfSignature;
+  const _meta = { catalogId: "SYL-PER-001", type: "performance_monitor", project: "SSOD" };
+</script>
+
+<!-- Auth + API modules -->
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+
+<script>
+  // ── requireAuth: redirect if not logged in and not demo ──
+  // Demo users CAN view performance (per RBAC table in handover doc)
+  requireAuth();
+
+  // ── Populate topbar with real user info ──────────────────
+  // (handled in init() after page load)
+</script>
+
+<div class="scan-line"></div>
+
+<!-- ===================== TOPBAR ===================== -->
+<div class="topbar">
+  <div class="logo-area">
+    <a href="dashboard.html" class="logo">SSOD</a>
+    <div class="badge-sys">SMART SECURE OPS</div>
+  </div>
+  <div class="system-status">
+    <div class="status-led"></div>
+    <span style="font-size:12px;font-weight:500;letter-spacing:.5px;">SYSTEM ONLINE</span>
+    <div class="time-stamp" id="liveTime"></div>
+  </div>
+  <div class="admin-profile">
+    <div class="admin-name"><i class="fas fa-user-shield" style="margin-right:6px;color:var(--cyan-accent)"></i>Admin · SYLVAH</div>
+    <a href="login.html" class="logout-btn"><i class="fas fa-sign-out-alt"></i> LOGOUT</a>
+  </div>
+</div>
+
+<!-- ===================== SIDEBAR ===================== -->
+<div class="sidebar">
+  <div class="nav-section">
+    <div class="nav-caption"><i class="fas fa-cube" style="margin-right:6px"></i>OPERATIONAL SUITE</div>
+    <a href="dashboard.html"    class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+    <a href="performance.html"  class="nav-item active"><i class="fas fa-chart-line"></i> Performance</a>
+    <a href="alerts.html"       class="nav-item"><i class="fas fa-bell"></i> Alerts <span class="alert-badge">3</span></a>
+    <a href="logs.html"         class="nav-item"><i class="fas fa-history"></i> Activity Logs</a>
+    <a href="incidents.html"    class="nav-item"><i class="fas fa-fire"></i> Incidents</a>
+    <a href="dashboard.html"    class="nav-item"><i class="fas fa-database"></i> Live Data Stream</a>
+  </div>
+  <div class="nav-section">
+    <div class="nav-caption"><i class="fas fa-lock" style="margin-right:6px"></i>ACCESS CONTROL</div>
+    <a href="users.html"        class="nav-item"><i class="fas fa-users"></i> User Management</a>
+    <a href="#"                 class="nav-item"><i class="fas fa-user-tag"></i> Role Manager</a>
+    <a href="#"                 class="nav-item"><i class="fas fa-shield-alt"></i> Security Center</a>
+  </div>
+</div>
+
+<!-- ===================== MAIN ===================== -->
+<div class="main" id="mainContent">
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <div class="page-icon"><i class="fas fa-chart-line"></i></div>
+      <div>
+        <div class="page-title">PERFORMANCE MONITOR</div>
+        <div class="page-subtitle">Real-time system metrics · Auto-refresh every 5s · Source: /api/metrics/live</div>
+      </div>
+    </div>
+    <div class="header-controls">
+      <button class="ctrl-btn active" id="btn1h" onclick="setRange('1h')"><i class="fas fa-clock"></i> 1H</button>
+      <button class="ctrl-btn" id="btn6h" onclick="setRange('6h')"><i class="fas fa-clock"></i> 6H</button>
+      <button class="ctrl-btn" id="btn24h" onclick="setRange('24h')"><i class="fas fa-clock"></i> 24H</button>
+      <div class="live-indicator"><div class="live-dot"></div> LIVE FEED</div>
+    </div>
+  </div>
+
+  <!-- THRESHOLD BREACH STATUS BAR -->
+  <div class="breach-bar">
+    <div class="breach-item ok">
+      <i class="fas fa-microchip breach-icon ok"></i>
+      <div class="breach-label"><strong>CPU — NOMINAL</strong>No threshold breach · Avg: <span id="cpuAvgBreach">5.4%</span></div>
+      <div class="breach-time" id="cpuBreachTime">just now</div>
+    </div>
+    <div class="breach-item ok" id="ramBreachItem">
+      <i class="fas fa-memory breach-icon ok" id="ramBreachIcon"></i>
+      <div class="breach-label"><strong id="ramBreachTitle">RAM — NOMINAL</strong>No threshold breach · Avg: <span id="ramAvgBreach">4.2%</span></div>
+      <div class="breach-time" id="ramBreachTime">just now</div>
+    </div>
+    <div class="breach-item info">
+      <i class="fas fa-hdd breach-icon info"></i>
+      <div class="breach-label"><strong>DISK — MONITORED</strong>Usage growing · Avg: <span id="diskAvgBreach">7.8%</span></div>
+      <div class="breach-time" id="diskBreachTime">just now</div>
+    </div>
+    <div class="breach-item ok">
+      <i class="fas fa-heartbeat breach-icon ok"></i>
+      <div class="breach-label"><strong>HEALTH SCORE — GOOD</strong>Score above baseline · Current: <span id="healthBreachVal">153</span>/200</div>
+      <div class="breach-time">updated 5s ago</div>
+    </div>
+  </div>
+
+  <!-- KPI STRIP -->
+  <div class="kpi-strip">
+    <!-- CPU -->
+    <div class="kpi-card cpu">
+      <div class="kpi-label"><i class="fas fa-microchip" style="color:var(--cyan-accent)"></i> CPU USAGE</div>
+      <div class="kpi-value" id="kpiCpu">5.6%</div>
+      <div class="kpi-delta delta-up" id="kpiCpuDelta"><i class="fas fa-arrow-up"></i> +0.3% vs last cycle</div>
+      <div class="kpi-sparkline">
+        <div class="mini-bar-chart" id="cpuMiniBar">
+          <div class="mini-bar" style="height:14px;background:var(--cyan-accent)"></div>
+          <div class="mini-bar" style="height:20px;background:var(--cyan-accent)"></div>
+          <div class="mini-bar" style="height:11px;background:var(--cyan-accent)"></div>
+          <div class="mini-bar" style="height:25px;background:var(--cyan-accent)"></div>
+          <div class="mini-bar" style="height:18px;background:var(--cyan-accent)"></div>
+          <div class="mini-bar" style="height:22px;background:var(--cyan-accent)"></div>
+          <div class="mini-bar" style="height:16px;background:var(--cyan-accent)"></div>
+        </div>
+      </div>
+    </div>
+    <!-- RAM -->
+    <div class="kpi-card ram">
+      <div class="kpi-label"><i class="fas fa-memory" style="color:var(--green-accent)"></i> RAM USAGE</div>
+      <div class="kpi-value" id="kpiRam">4.56%</div>
+      <div class="kpi-delta delta-down" id="kpiRamDelta"><i class="fas fa-arrow-down"></i> -0.2% vs last cycle</div>
+      <div class="kpi-sparkline">
+        <div class="mini-bar-chart" id="ramMiniBar">
+          <div class="mini-bar" style="height:10px;background:var(--green-accent)"></div>
+          <div class="mini-bar" style="height:17px;background:var(--green-accent)"></div>
+          <div class="mini-bar" style="height:14px;background:var(--green-accent)"></div>
+          <div class="mini-bar" style="height:22px;background:var(--green-accent)"></div>
+          <div class="mini-bar" style="height:12px;background:var(--green-accent)"></div>
+          <div class="mini-bar" style="height:19px;background:var(--green-accent)"></div>
+          <div class="mini-bar" style="height:15px;background:var(--green-accent)"></div>
+        </div>
+      </div>
+    </div>
+    <!-- DISK -->
+    <div class="kpi-card disk">
+      <div class="kpi-label"><i class="fas fa-hdd" style="color:var(--orange-accent)"></i> DISK USAGE</div>
+      <div class="kpi-value" id="kpiDisk">7.54%</div>
+      <div class="kpi-delta delta-up" id="kpiDiskDelta"><i class="fas fa-arrow-up"></i> +0.8% vs last cycle</div>
+      <div class="kpi-sparkline">
+        <div class="mini-bar-chart" id="diskMiniBar">
+          <div class="mini-bar" style="height:18px;background:var(--orange-accent)"></div>
+          <div class="mini-bar" style="height:21px;background:var(--orange-accent)"></div>
+          <div class="mini-bar" style="height:19px;background:var(--orange-accent)"></div>
+          <div class="mini-bar" style="height:26px;background:var(--orange-accent)"></div>
+          <div class="mini-bar" style="height:22px;background:var(--orange-accent)"></div>
+          <div class="mini-bar" style="height:28px;background:var(--orange-accent)"></div>
+          <div class="mini-bar" style="height:24px;background:var(--orange-accent)"></div>
+        </div>
+      </div>
+    </div>
+    <!-- HEALTH -->
+    <div class="kpi-card health">
+      <div class="kpi-label"><i class="fas fa-heartbeat" style="color:var(--purple-accent)"></i> HEALTH SCORE</div>
+      <div class="kpi-value" id="kpiHealth">153</div>
+      <div class="kpi-delta delta-ok" id="kpiHealthDelta"><i class="fas fa-minus"></i> Stable · Threshold: 100</div>
+      <div class="kpi-sparkline">
+        <div class="mini-bar-chart" id="healthMiniBar">
+          <div class="mini-bar" style="height:22px;background:var(--purple-accent)"></div>
+          <div class="mini-bar" style="height:25px;background:var(--purple-accent)"></div>
+          <div class="mini-bar" style="height:20px;background:var(--purple-accent)"></div>
+          <div class="mini-bar" style="height:28px;background:var(--purple-accent)"></div>
+          <div class="mini-bar" style="height:24px;background:var(--purple-accent)"></div>
+          <div class="mini-bar" style="height:29px;background:var(--purple-accent)"></div>
+          <div class="mini-bar" style="height:26px;background:var(--purple-accent)"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 LIVE LINE CHARTS -->
+  <div class="charts-row">
+    <!-- CPU Chart -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <div class="chart-title cpu-title"><i class="fas fa-microchip"></i> CPU USAGE</div>
+          <div class="chart-current td-cyan" id="chartCpuVal">5.6%</div>
+          <div class="chart-sub">Real-time · 5s interval</div>
+        </div>
+        <span class="chart-badge badge-normal" id="cpuStatusBadge">NORMAL</span>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="cpuChart"></canvas>
+      </div>
+    </div>
+    <!-- RAM Chart -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <div class="chart-title ram-title"><i class="fas fa-memory"></i> RAM USAGE</div>
+          <div class="chart-current td-green" id="chartRamVal">4.56%</div>
+          <div class="chart-sub">Real-time · 5s interval</div>
+        </div>
+        <span class="chart-badge badge-normal" id="ramStatusBadge">NORMAL</span>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="ramChart"></canvas>
+      </div>
+    </div>
+    <!-- DISK Chart -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <div class="chart-title disk-title"><i class="fas fa-hdd"></i> DISK USAGE</div>
+          <div class="chart-current td-orange" id="chartDiskVal">7.54%</div>
+          <div class="chart-sub">Real-time · 5s interval</div>
+        </div>
+        <span class="chart-badge badge-normal" id="diskStatusBadge">NORMAL</span>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="diskChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM ROW: Gauge + Health Ring + Table -->
+  <div class="bottom-row">
+
+    <!-- Gauge: CPU/RAM/DISK arcs -->
+    <div class="gauge-card">
+      <div class="panel-header-row">
+        <div class="panel-h3"><i class="fas fa-tachometer-alt"></i> SYSTEM GAUGES</div>
+        <span style="font-size:9px;font-family:var(--font-mono);color:var(--text-muted)">LIVE</span>
+      </div>
+      <div class="gauge-area">
+        <div style="display:flex;gap:14px;justify-content:center;align-items:flex-end;width:100%">
+          <div style="text-align:center">
+            <div class="gauge-wrap" style="width:90px;height:52px">
+              <canvas id="gaugeCpu" width="90" height="52"></canvas>
+              <div class="gauge-center-label td-cyan" id="gaugeCpuLabel">5.6%</div>
+            </div>
+            <div style="font-size:9px;font-family:var(--font-mono);color:var(--text-muted);margin-top:4px">CPU</div>
+          </div>
+          <div style="text-align:center">
+            <div class="gauge-wrap" style="width:90px;height:52px">
+              <canvas id="gaugeRam" width="90" height="52"></canvas>
+              <div class="gauge-center-label td-green" id="gaugeRamLabel">4.56%</div>
+            </div>
+            <div style="font-size:9px;font-family:var(--font-mono);color:var(--text-muted);margin-top:4px">RAM</div>
+          </div>
+          <div style="text-align:center">
+            <div class="gauge-wrap" style="width:90px;height:52px">
+              <canvas id="gaugeDisk" width="90" height="52"></canvas>
+              <div class="gauge-center-label td-orange" id="gaugeDiskLabel">7.54%</div>
+            </div>
+            <div style="font-size:9px;font-family:var(--font-mono);color:var(--text-muted);margin-top:4px">DISK</div>
+          </div>
+        </div>
+        <div class="gauge-stats">
+          <div class="gauge-stat">
+            <div class="gauge-stat-label">PEAK</div>
+            <div class="gauge-stat-val td-cyan" id="cpuPeak">12.1%</div>
+          </div>
+          <div class="gauge-stat">
+            <div class="gauge-stat-label">AVG</div>
+            <div class="gauge-stat-val td-cyan" id="cpuAvg">5.4%</div>
+          </div>
+          <div class="gauge-stat">
+            <div class="gauge-stat-label">MIN</div>
+            <div class="gauge-stat-val" style="color:var(--text-secondary)" id="cpuMin">2.1%</div>
+          </div>
+          <div class="gauge-stat">
+            <div class="gauge-stat-label">PEAK</div>
+            <div class="gauge-stat-val td-green" id="ramPeak">9.8%</div>
+          </div>
+          <div class="gauge-stat">
+            <div class="gauge-stat-label">AVG</div>
+            <div class="gauge-stat-val td-green" id="ramAvg">4.2%</div>
+          </div>
+          <div class="gauge-stat">
+            <div class="gauge-stat-label">MIN</div>
+            <div class="gauge-stat-val" style="color:var(--text-secondary)" id="ramMin">1.8%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Health Score Doughnut -->
+    <div class="health-card">
+      <div class="panel-header-row">
+        <div class="panel-h3"><i class="fas fa-heartbeat"></i> HEALTH SCORE</div>
+        <span class="chart-badge badge-normal">GOOD</span>
+      </div>
+      <div class="health-ring-area">
+        <div class="health-ring-wrap">
+          <canvas id="healthRing" width="130" height="130"></canvas>
+          <div class="health-ring-center">
+            <div class="health-score-num" id="healthRingNum">153</div>
+            <div class="health-score-denom">/ 200</div>
+          </div>
+        </div>
+        <div class="health-breakdown">
+          <div class="health-row">
+            <span class="health-row-label">Uptime</span>
+            <div class="h-bar"><div class="h-fill" style="width:95%;background:var(--green-accent)"></div></div>
+            <span class="health-row-val td-green">95%</span>
+          </div>
+          <div class="health-row">
+            <span class="health-row-label">Security</span>
+            <div class="h-bar"><div class="h-fill" style="width:82%;background:var(--cyan-accent)"></div></div>
+            <span class="health-row-val td-cyan">82%</span>
+          </div>
+          <div class="health-row">
+            <span class="health-row-label">Perf</span>
+            <div class="h-bar"><div class="h-fill" style="width:74%;background:var(--orange-accent)"></div></div>
+            <span class="health-row-val td-orange">74%</span>
+          </div>
+          <div class="health-row">
+            <span class="health-row-label">Stability</span>
+            <div class="h-bar"><div class="h-fill" id="stabilityFill" style="width:78%;background:var(--purple-accent)"></div></div>
+            <span class="health-row-val td-purple" id="stabilityVal">78%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Readings Table -->
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-title"><i class="fas fa-table" style="margin-right:6px;color:var(--cyan-accent)"></i>RECENT READINGS</div>
+        <button class="export-btn" onclick="exportTable()"><i class="fas fa-download"></i> EXPORT CSV</button>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>TIMESTAMP</th>
+            <th>CPU</th>
+            <th>RAM</th>
+            <th>DISK</th>
+            <th>HEALTH</th>
+            <th>STATUS</th>
+          </tr>
+        </thead>
+        <tbody id="metricsTableBody">
+          <!-- Populated by JS -->
+        </tbody>
+      </table>
+    </div>
+
+  </div><!-- /bottom-row -->
+
+</div><!-- /main -->
+
+<!-- ===================== SCRIPTS ===================== -->
+<script>
+
+
+// ── Live Clock ──────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  let h = now.getHours(), m = now.getMinutes();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  const pad = n => String(n).padStart(2,'0');
+  const dateStr = `${now.getMonth()+1}/${now.getDate()}/${now.getFullYear()}`;
+  document.getElementById('liveTime').textContent =
+    `${pad(h)}:${pad(m)} ${ampm} · ${dateStr}`;
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ── Time range state ────────────────────────────────────
+let currentRange = '1h';
+function setRange(r) {
+  currentRange = r;
+  ['1h','6h','24h'].forEach(x => {
+    document.getElementById('btn'+x).classList.toggle('active', x === r);
+  });
+}
+
+// ── Data buffers ────────────────────────────────────────
+const MAX_POINTS = 30;
+const timeLabels = [];
+const cpuData  = [];
+const ramData  = [];
+const diskData = [];
+
+// ── Timestamp helper ────────────────────────────────────
+function fmtTime(date) {
+  const d = date instanceof Date ? date : new Date(date);
+  const pad = n => String(n).padStart(2,'0');
+  let h = d.getHours(), m = d.getMinutes(), s = d.getSeconds();
+  const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
+  return `${pad(h)}:${pad(m)}:${pad(s)} ${ap}`;
+}
+
+// ── Seed charts from /api/metrics/history ───────────────
+async function seedFromHistory() {
+  try {
+    const data = await apiCall('/metrics/history?limit=30');
+    if (data && Array.isArray(data) && data.length > 0) {
+      // data is oldest→newest; group by recorded_at into combined readings
+      // The API returns individual rows per metric_name; we need to group by timestamp
+      const buckets = {};
+      data.forEach(row => {
+        const ts = row.recorded_at;
+        if (!buckets[ts]) buckets[ts] = {};
+        buckets[ts][row.metric_name] = parseFloat(row.value);
+      });
+      const sorted = Object.keys(buckets).sort();
+      const recent = sorted.slice(-MAX_POINTS);
+      recent.forEach(ts => {
+        const b = buckets[ts];
+        timeLabels.push(fmtTime(ts));
+        cpuData.push(+(b.cpu  || b.CPU  || 0).toFixed(2));
+        ramData.push(+(b.ram  || b.RAM  || 0).toFixed(2));
+        diskData.push(+(b.disk || b.DISK || 0).toFixed(2));
+      });
+    }
+  } catch(e) {
+    console.warn('History fetch failed, using placeholder seed:', e);
+  }
+  // If we got nothing from API, seed with placeholder so charts aren't blank
+  if (timeLabels.length === 0) {
+    for (let i = MAX_POINTS; i >= 0; i--) {
+      const t = new Date(Date.now() - i * 5000);
+      timeLabels.push(fmtTime(t));
+      cpuData.push(+(Math.random() * 10 + 2).toFixed(2));
+      ramData.push(+(Math.random() * 8  + 2).toFixed(2));
+      diskData.push(+(Math.random() * 6  + 5).toFixed(2));
+    }
+  }
+}
+
+// ── Chart.js shared defaults ────────────────────────────
+Chart.defaults.color = '#5b6b8c';
+Chart.defaults.font.family = "'JetBrains Mono', monospace";
+Chart.defaults.font.size = 9;
+
+function makeLineChart(canvasId, color, dataArr, label, threshold) {
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, 120);
+  grad.addColorStop(0, color + '33');
+  grad.addColorStop(1, color + '00');
+  return new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: timeLabels,
+      datasets: [{
+        label,
+        data: dataArr,
+        borderColor: color,
+        borderWidth: 1.5,
+        backgroundColor: grad,
+        fill: true,
+        tension: 0.45,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        pointHoverBackgroundColor: color,
+        pointHoverBorderColor: '#0a0f1c',
+        pointHoverBorderWidth: 2,
+      },
+      // Threshold line
+      {
+        label: 'Threshold',
+        data: Array(dataArr.length).fill(threshold),
+        borderColor: '#ff9f4a55',
+        borderWidth: 1,
+        borderDash: [4, 4],
+        fill: false,
+        tension: 0,
+        pointRadius: 0,
+        pointHoverRadius: 0,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 400 },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#12172b',
+          borderColor: color,
+          borderWidth: 1,
+          titleColor: color,
+          bodyColor: '#eef2ff',
+          padding: 8,
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%`
+          }
+        }
+      },
+      scales: {
+        x: {
+          display: false,
+          grid: { display: false }
+        },
+        y: {
+          display: true,
+          min: 0,
+          max: 30,
+          grid: {
+            color: 'rgba(42,58,96,0.4)',
+            drawBorder: false
+          },
+          ticks: {
+            maxTicksLimit: 4,
+            callback: v => v + '%'
+          },
+          border: { display: false }
+        }
+      }
+    }
+  });
+}
+
+// ── Chart instances (set by buildCharts) ─────────────────
+let cpuChart, ramChart, diskChart, gaugeCpu, gaugeRam, gaugeDisk, healthRingChart;
+
+// ── Build all charts (called after seedFromHistory) ──────
+function buildCharts() {
+  cpuChart  = makeLineChart('cpuChart',  '#00e0ff', cpuData,  'CPU',  15);
+  ramChart  = makeLineChart('ramChart',  '#1effbc', ramData,  'RAM',  15);
+  diskChart = makeLineChart('diskChart', '#ff9f4a', diskData, 'Disk', 20);
+  gaugeCpu  = makeGauge('gaugeCpu',  '#00e0ff');
+  gaugeRam  = makeGauge('gaugeRam',  '#1effbc');
+  gaugeDisk = makeGauge('gaugeDisk', '#ff9f4a');
+  healthRingChart = makeHealthRing(153);
+
+  // Seed table from history data
+  const recent = cpuData.slice(-8);
+  const recentTs = timeLabels.slice(-8);
+  recent.forEach((c, i) => {
+    const r = ramData[ramData.length - recent.length + i] || 0;
+    const d = diskData[diskData.length - recent.length + i] || 0;
+    const h = Math.round(200 - (c * 0.6 + r * 0.3 + d * 0.1));
+    tableRows.push(formatTableRow(c, r, d, h, recentTs[i]));
+  });
+  renderTable();
+}
+
+// ── Half-donut Gauge (Chart.js doughnut trick) ──────────
+function makeGauge(canvasId, color) {
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  return new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      datasets: [{
+        data: [5, 95],
+        backgroundColor: [color, '#1f2a40'],
+        borderWidth: 0,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: false,
+      rotation: -90,
+      circumference: 180,
+      cutout: '72%',
+      animation: { duration: 600 },
+      plugins: { legend: { display: false }, tooltip: { enabled: false } }
+    }
+  });
+}
+
+// healthRingChart created inside buildCharts()
+
+// ── Health Ring (full doughnut) ─────────────────────────
+function makeHealthRing(score) {
+  const ctx = document.getElementById('healthRing').getContext('2d');
+  return new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      datasets: [{
+        data: [score, 200 - score],
+        backgroundColor: ['#b77cff', '#1f2a40'],
+        borderWidth: 0,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: false,
+      cutout: '78%',
+      animation: { duration: 800 },
+      plugins: { legend: { display: false }, tooltip: { enabled: false } }
+    }
+  });
+}
+// healthRingChart is created inside buildCharts()
+
+// ── Table data ──────────────────────────────────────────
+const tableRows = [];
+function formatTableRow(cpu, ram, disk, health, tsOverride) {
+  const ts = tsOverride || fmtTime(new Date());
+  const status = cpu > 80 || ram > 80 || disk > 90
+    ? '<span class="status-pill pill-crit">CRITICAL</span>'
+    : cpu > 60 || ram > 60 || disk > 75
+      ? '<span class="status-pill pill-warn">WARNING</span>'
+      : '<span class="status-pill pill-ok">NOMINAL</span>';
+  return { ts, cpu, ram, disk, health, status };
+}
+
+function renderTable() {
+  const tbody = document.getElementById('metricsTableBody');
+  tbody.innerHTML = tableRows.slice(-8).reverse().map(r => `
+    <tr>
+      <td class="td-mono" style="color:var(--text-muted)">${r.ts}</td>
+      <td class="td-cyan td-mono">${r.cpu.toFixed(2)}%</td>
+      <td class="td-green td-mono">${r.ram.toFixed(2)}%</td>
+      <td class="td-orange td-mono">${r.disk.toFixed(2)}%</td>
+      <td class="td-purple td-mono">${r.health}</td>
+      <td>${r.status}</td>
+    </tr>
+  `).join('');
+}
+
+// (table seeded inside buildCharts() after history load)
+
+// ── Mini-bar helpers ────────────────────────────────────
+const miniHistory = { cpu:[], ram:[], disk:[], health:[] };
+function updateMiniBar(containerId, color, history) {
+  const bars = document.querySelectorAll(`#${containerId} .mini-bar`);
+  const slice = history.slice(-7);
+  const max = Math.max(...slice, 1);
+  bars.forEach((bar, i) => {
+    const val = slice[i] || 0;
+    bar.style.height = Math.max(4, (val / max) * 30) + 'px';
+    bar.style.background = color;
+  });
+}
+
+// ── Status badge helper ─────────────────────────────────
+function updateStatusBadge(elId, val, warnThreshold, critThreshold) {
+  const el = document.getElementById(elId);
+  if (val >= critThreshold) {
+    el.className = 'chart-badge badge-critical';
+    el.textContent = 'CRITICAL';
+  } else if (val >= warnThreshold) {
+    el.className = 'chart-badge badge-warning';
+    el.textContent = 'WARNING';
+  } else {
+    el.className = 'chart-badge badge-normal';
+    el.textContent = 'NORMAL';
+  }
+}
+
+// ── Store last live values for fallback ─────────────────
+let _lastLive = { cpu: 5, ram: 4, disk: 7 };
+
+// ── Main live update — calls /api/metrics/live ───────────
+async function liveUpdate() {
+  let newCpu, newRam, newDisk;
+
+  try {
+    const live = await apiCall('/metrics/live');
+    // live = { cpu: 12.3, ram: 45.6, disk: 78.9 }  (psutil values)
+    newCpu  = +(parseFloat(live.cpu  || live.CPU  || _lastLive.cpu)).toFixed(2);
+    newRam  = +(parseFloat(live.ram  || live.RAM  || _lastLive.ram)).toFixed(2);
+    newDisk = +(parseFloat(live.disk || live.DISK || _lastLive.disk)).toFixed(2);
+    _lastLive = { cpu: newCpu, ram: newRam, disk: newDisk };
+
+    // Also store this reading to DB (fire-and-forget, non-blocking)
+    ['cpu','ram','disk'].forEach(mt => {
+      const val = mt === 'cpu' ? newCpu : mt === 'ram' ? newRam : newDisk;
+      apiCall('/metrics/add', 'POST', {
+        source: 'local',
+        metric_type: 'system',
+        metric_name: mt,
+        value: val,
+        unit: 'percent',
+        threshold_breached: mt === 'disk' ? val > 20 : val > 15
+      }).catch(() => {});
+    });
+
+  } catch(e) {
+    // API unreachable — keep last value with tiny drift so UI isn't frozen
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+    newCpu  = +clamp(_lastLive.cpu  + (Math.random() - 0.5) * 0.5, 1, 95).toFixed(2);
+    newRam  = +clamp(_lastLive.ram  + (Math.random() - 0.5) * 0.5, 1, 95).toFixed(2);
+    newDisk = +clamp(_lastLive.disk + (Math.random() - 0.5) * 0.2, 1, 99).toFixed(2);
+    _lastLive = { cpu: newCpu, ram: newRam, disk: newDisk };
+    console.warn('Live metrics API unreachable, using last known values');
+  }
+
+  // Health score: derived from CPU+RAM+DISK (lower usage = higher health)
+  const newHealth = Math.round(200 - (newCpu * 0.6 + newRam * 0.3 + newDisk * 0.1));
+
+  // Time label
+  const ts = fmtTime(new Date());
+
+  // Push to arrays
+  if (timeLabels.length >= MAX_POINTS) {
+    timeLabels.shift(); cpuData.shift(); ramData.shift(); diskData.shift();
+  }
+  timeLabels.push(ts);
+  cpuData.push(newCpu);
+  ramData.push(newRam);
+  diskData.push(newDisk);
+
+  // Update 3 charts
+  [cpuChart, ramChart, diskChart].forEach(c => {
+    c.data.labels = timeLabels;
+    c.data.datasets[1].data = Array(timeLabels.length).fill(
+      c === diskChart ? 20 : 15
+    );
+    c.update('none');
+  });
+  cpuChart.data.datasets[0].data  = cpuData;
+  ramChart.data.datasets[0].data  = ramData;
+  diskChart.data.datasets[0].data = diskData;
+  [cpuChart, ramChart, diskChart].forEach(c => c.update());
+
+  // KPI cards
+  const prevCpu = cpuData[cpuData.length - 2] || newCpu;
+  const prevRam = ramData[ramData.length - 2] || newRam;
+  const diffCpu  = (newCpu  - prevCpu).toFixed(1);
+  const diffRam  = (newRam  - prevRam).toFixed(1);
+  const diffDisk = (newDisk - (diskData[diskData.length - 2] || newDisk)).toFixed(1);
+
+  document.getElementById('kpiCpu').textContent    = newCpu.toFixed(1) + '%';
+  document.getElementById('kpiRam').textContent    = newRam.toFixed(1) + '%';
+  document.getElementById('kpiDisk').textContent   = newDisk.toFixed(1) + '%';
+  document.getElementById('kpiHealth').textContent = newHealth;
+
+  const setDelta = (id, val) => {
+    const el = document.getElementById(id);
+    const isUp = parseFloat(val) >= 0;
+    el.className = 'kpi-delta ' + (isUp ? 'delta-up' : 'delta-down');
+    el.innerHTML = `<i class="fas fa-arrow-${isUp?'up':'down'}"></i> ${isUp?'+':''}${val}% vs last cycle`;
+  };
+  setDelta('kpiCpuDelta',  diffCpu);
+  setDelta('kpiRamDelta',  diffRam);
+  setDelta('kpiDiskDelta', diffDisk);
+
+  // Chart header values
+  document.getElementById('chartCpuVal').textContent  = newCpu.toFixed(2)  + '%';
+  document.getElementById('chartRamVal').textContent  = newRam.toFixed(2)  + '%';
+  document.getElementById('chartDiskVal').textContent = newDisk.toFixed(2) + '%';
+
+  // Status badges
+  updateStatusBadge('cpuStatusBadge',  newCpu,  12, 20);
+  updateStatusBadge('ramStatusBadge',  newRam,  12, 20);
+  updateStatusBadge('diskStatusBadge', newDisk, 18, 25);
+
+  // Gauges (scale 0–100 range, our max is 30)
+  const toGaugePct = (v, max) => [v / max * 100, 100 - v / max * 100];
+  gaugeCpu.data.datasets[0].data  = toGaugePct(newCpu, 30);
+  gaugeRam.data.datasets[0].data  = toGaugePct(newRam, 30);
+  gaugeDisk.data.datasets[0].data = toGaugePct(newDisk, 30);
+  gaugeCpu.update();  gaugeRam.update();  gaugeDisk.update();
+
+  document.getElementById('gaugeCpuLabel').textContent  = newCpu.toFixed(1) + '%';
+  document.getElementById('gaugeRamLabel').textContent  = newRam.toFixed(1) + '%';
+  document.getElementById('gaugeDiskLabel').textContent = newDisk.toFixed(1) + '%';
+
+  // Health ring
+  healthRingChart.data.datasets[0].data = [newHealth, 200 - newHealth];
+  healthRingChart.update();
+  document.getElementById('healthRingNum').textContent = newHealth;
+
+  // Stats
+  const cpuAll = cpuData.slice(-20);
+  const ramAll = ramData.slice(-20);
+  document.getElementById('cpuPeak').textContent = Math.max(...cpuAll).toFixed(1) + '%';
+  document.getElementById('cpuAvg').textContent  = (cpuAll.reduce((a,b)=>a+b,0)/cpuAll.length).toFixed(1) + '%';
+  document.getElementById('cpuMin').textContent  = Math.min(...cpuAll).toFixed(1) + '%';
+  document.getElementById('ramPeak').textContent = Math.max(...ramAll).toFixed(1) + '%';
+  document.getElementById('ramAvg').textContent  = (ramAll.reduce((a,b)=>a+b,0)/ramAll.length).toFixed(1) + '%';
+  document.getElementById('ramMin').textContent  = Math.min(...ramAll).toFixed(1) + '%';
+
+  // Breach bar updates
+  document.getElementById('cpuAvgBreach').textContent  = (cpuAll.reduce((a,b)=>a+b,0)/cpuAll.length).toFixed(1) + '%';
+  document.getElementById('ramAvgBreach').textContent  = (ramAll.reduce((a,b)=>a+b,0)/ramAll.length).toFixed(1) + '%';
+  document.getElementById('healthBreachVal').textContent = newHealth;
+
+  // Mini history & bars
+  miniHistory.cpu.push(newCpu);
+  miniHistory.ram.push(newRam);
+  miniHistory.disk.push(newDisk);
+  miniHistory.health.push(newHealth);
+  updateMiniBar('cpuMiniBar',    '#00e0ff', miniHistory.cpu);
+  updateMiniBar('ramMiniBar',    '#1effbc', miniHistory.ram);
+  updateMiniBar('diskMiniBar',   '#ff9f4a', miniHistory.disk);
+  updateMiniBar('healthMiniBar', '#b77cff', miniHistory.health);
+
+  // Table
+  tableRows.push(formatTableRow(newCpu, newRam, newDisk, newHealth));
+  renderTable();
+}
+
+// ── Export CSV ──────────────────────────────────────────
+function exportTable() {
+  const headers = ['Timestamp','CPU %','RAM %','Disk %','Health','Status'];
+  const rows = tableRows.slice(-50).map(r =>
+    [r.ts, r.cpu.toFixed(2), r.ram.toFixed(2), r.disk.toFixed(2), r.health, 'NOMINAL'].join(',')
+  );
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `ssod_metrics_${Date.now()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Bootstrap ────────────────────────────────────────────
+async function init() {
+  // 1. Load real username/role into topbar
+  try {
+    const token = typeof getToken === 'function' ? getToken() : null;
+    if (token) {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const username = payload.sub || payload.identity || 'User';
+      // Try to get role from /api/users/<id> — fall back to token claim
+      const role = payload.role || 'operator';
+      const nameEl = document.querySelector('.admin-name');
+      if (nameEl) {
+        nameEl.innerHTML = `<i class="fas fa-user-shield" style="margin-right:6px;color:var(--cyan-accent)"></i>${username} · <span style="color:var(--text-muted);text-transform:capitalize">${role}</span>`;
+      }
+    }
+  } catch(e) { /* keep default topbar */ }
+
+  // 2. Seed charts with real history data
+  await seedFromHistory();
+
+  // 3. Build all charts (now that data arrays are populated)
+  buildCharts();
+
+  // 4. First live tick immediately, then poll every 5s
+  await liveUpdate();
+  setInterval(liveUpdate, 5000);
+}
+
+init();
+</script>
+</body>
+</html>

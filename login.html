@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SSOD — Secure Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+
+    .orb {
+      position: fixed; border-radius: 50%;
+      filter: blur(80px); pointer-events: none; opacity: 0.12;
+    }
+    .orb-1 {
+      width: 500px; height: 500px;
+      background: var(--cyan); top: -150px; left: -100px;
+      animation: orbFloat 8s ease-in-out infinite;
+    }
+    .orb-2 {
+      width: 400px; height: 400px;
+      background: #0040ff; bottom: -100px; right: -80px;
+      animation: orbFloat 10s ease-in-out infinite reverse;
+    }
+    @keyframes orbFloat {
+      0%, 100% { transform: translate(0,0); }
+      50%       { transform: translate(20px, 20px); }
+    }
+
+    .corner {
+      position: fixed; width: 50px; height: 50px; pointer-events: none;
+    }
+    .corner-tl { top: 20px; left: 20px; border-top: 2px solid var(--cyan); border-left: 2px solid var(--cyan); }
+    .corner-tr { top: 20px; right: 20px; border-top: 2px solid var(--cyan); border-right: 2px solid var(--cyan); }
+    .corner-bl { bottom: 20px; left: 20px; border-bottom: 2px solid var(--cyan); border-left: 2px solid var(--cyan); }
+    .corner-br { bottom: 20px; right: 20px; border-bottom: 2px solid var(--cyan); border-right: 2px solid var(--cyan); }
+
+    .login-wrap {
+      position: relative; z-index: 10;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 28px;
+      animation: fadeIn 0.8s ease forwards;
+    }
+
+    .logo-area { text-align: center; }
+    .logo-title {
+      font-family: var(--font-head);
+      font-size: 48px; font-weight: 700;
+      letter-spacing: 10px; color: var(--cyan);
+      text-shadow: 0 0 40px rgba(0,212,255,0.5);
+      line-height: 1;
+    }
+    .logo-sub {
+      font-family: var(--font-mono);
+      font-size: 11px; letter-spacing: 3px;
+      color: var(--text-dim); margin-top: 6px;
+    }
+
+    .login-card {
+      width: 420px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 36px;
+      position: relative;
+      clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px));
+    }
+    .login-card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(0,212,255,0.04) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .card-head {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-head-title {
+      font-family: var(--font-head);
+      font-size: 16px; font-weight: 600;
+      letter-spacing: 2px; color: var(--text);
+      text-transform: uppercase;
+    }
+    .secure-badge {
+      font-family: var(--font-mono); font-size: 10px;
+      color: var(--green); border: 1px solid var(--green);
+      padding: 3px 10px; letter-spacing: 1px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .input-group { margin-bottom: 20px; }
+    .input-label {
+      display: block;
+      font-family: var(--font-mono); font-size: 10px;
+      letter-spacing: 2px; color: var(--text-dim);
+      margin-bottom: 8px; text-transform: uppercase;
+    }
+    .input-wrap { position: relative; }
+    .input-icon {
+      position: absolute; left: 12px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px; color: var(--text-dim);
+      pointer-events: none;
+    }
+    .login-input {
+      width: 100%; padding: 12px 40px 12px 38px;
+      background: var(--bg); border: 1px solid var(--border);
+      color: var(--text); font-family: var(--font-mono); font-size: 13px;
+      outline: none; transition: all 0.2s;
+    }
+    .login-input:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 2px rgba(0,212,255,0.08);
+    }
+    .login-input::placeholder { color: var(--text-dim); }
+
+    /* Password toggle eye button */
+    .eye-btn {
+      position: absolute; right: 12px; top: 50%;
+      transform: translateY(-50%);
+      background: none; border: none;
+      color: var(--text-dim); cursor: pointer;
+      font-size: 14px; padding: 2px 4px;
+      transition: color 0.2s; z-index: 2;
+    }
+    .eye-btn:hover { color: var(--cyan); }
+
+    .btn-login {
+      width: 100%; padding: 14px;
+      background: transparent; border: 1px solid var(--cyan);
+      color: var(--cyan); font-family: var(--font-head);
+      font-size: 16px; font-weight: 600;
+      letter-spacing: 4px; text-transform: uppercase;
+      cursor: pointer; position: relative; overflow: hidden;
+      transition: all 0.3s; margin-top: 8px;
+    }
+    .btn-login::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: var(--cyan);
+      transform: translateX(-100%);
+      transition: transform 0.3s;
+    }
+    .btn-login:hover::before { transform: translateX(0); }
+    .btn-login:hover { color: #000; }
+    .btn-login span { position: relative; z-index: 1; }
+    .btn-login:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .error-msg {
+      background: var(--red-dim); border: 1px solid var(--red);
+      color: var(--red); padding: 10px 14px;
+      font-family: var(--font-mono); font-size: 11px;
+      margin-bottom: 16px; display: none;
+      letter-spacing: 0.5px;
+    }
+
+    .success-msg {
+      background: rgba(0,255,136,0.08); border: 1px solid var(--green);
+      color: var(--green); padding: 10px 14px;
+      font-family: var(--font-mono); font-size: 11px;
+      margin-bottom: 16px; display: none;
+      letter-spacing: 0.5px;
+    }
+
+    .login-footer {
+      text-align: center;
+      font-family: var(--font-mono); font-size: 10px;
+      color: var(--text-dim); letter-spacing: 1px;
+    }
+    .login-footer span { color: var(--cyan); }
+
+    .ticker {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      height: 26px;
+      background: rgba(0,212,255,0.04);
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; overflow: hidden;
+      font-family: var(--font-mono); font-size: 10px;
+    }
+    .ticker-label {
+      padding: 0 14px; background: var(--cyan);
+      color: #000; font-weight: bold;
+      height: 100%; display: flex; align-items: center;
+      white-space: nowrap; letter-spacing: 1px; flex-shrink: 0;
+    }
+    .ticker-scroll {
+      display: flex; gap: 60px;
+      animation: tickerScroll 25s linear infinite;
+      white-space: nowrap; padding-left: 20px;
+    }
+    .ticker-scroll span { color: var(--text-dim); }
+    .ticker-scroll span b { color: var(--green); font-weight: normal; }
+    @keyframes tickerScroll {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="grid-bg"></div>
+  <div class="scan-line"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="corner corner-tl"></div>
+  <div class="corner corner-tr"></div>
+  <div class="corner corner-bl"></div>
+  <div class="corner corner-br"></div>
+
+  <div class="login-wrap">
+
+    <div class="logo-area">
+      <div class="logo-title">SSOD</div>
+      <div class="logo-sub">SMART SECURE OPERATIONS & PERFORMANCE DASHBOARD</div>
+    </div>
+
+    <div class="login-card">
+      <div class="card-head">
+        <div class="card-head-title">🔐 System Access</div>
+        <div class="secure-badge">● SECURE</div>
+      </div>
+
+      <div class="error-msg"   id="errorMsg"></div>
+      <div class="success-msg" id="successMsg"></div>
+
+      <div class="input-group">
+        <label class="input-label">Username</label>
+        <div class="input-wrap">
+          <span class="input-icon">👤</span>
+          <input type="text" class="login-input" id="username"
+                 placeholder="Enter username" autocomplete="off"/>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">Password</label>
+        <div class="input-wrap">
+          <span class="input-icon">🔑</span>
+          <input type="password" class="login-input" id="password"
+                 placeholder="Enter password"/>
+          <!-- ── Password show/hide eye ── -->
+          <button class="eye-btn" type="button" id="eyeBtn"
+                  onclick="togglePassword()" title="Show/hide password">
+            👁
+          </button>
+        </div>
+      </div>
+
+      <button class="btn-login" id="loginBtn" onclick="doLogin()">
+        <span id="loginBtnText">INITIATE ACCESS</span>
+      </button>
+    </div>
+
+    <div class="login-footer">
+      SSOD v1.0.0 &nbsp;|&nbsp; <span>SYLVAH™</span> &nbsp;|&nbsp; © 2026
+    </div>
+  </div>
+
+  <div class="ticker">
+    <div class="ticker-label">SYS</div>
+    <div class="ticker-scroll">
+      <span>SYSTEM STATUS <b>ONLINE</b></span>
+      <span>DATABASE <b>CONNECTED</b></span>
+      <span>SECURITY PROTOCOL <b>ACTIVE</b></span>
+      <span>MONITORING <b>ENABLED</b></span>
+      <span>ENCRYPTION <b>AES-256</b></span>
+      <span>SYSTEM STATUS <b>ONLINE</b></span>
+      <span>DATABASE <b>CONNECTED</b></span>
+      <span>SECURITY PROTOCOL <b>ACTIVE</b></span>
+      <span>MONITORING <b>ENABLED</b></span>
+      <span>ENCRYPTION <b>AES-256</b></span>
+    </div>
+  </div>
+
+  <!-- Load api.js and auth.js FIRST -->
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+
+  <script>
+    /* ── SYLVAH™ Signature — uses unique var name to avoid conflict with auth.js ── */
+    const _loginSignature = {
+      id: "SSOD-SYL-2026-F8I2",
+      author: "SYLVAH™",
+      created: "2026-04-04",
+      version: "3.0.0",
+      module: "login.html",
+      hash: "d6a1e5c3b9f2d8e7"
+    };
+    const _loginMeta = {
+      catalogId: "SYL-LOGIN-003",
+      sourceCode: "SSOD2026",
+      revision: "SYL-v1"
+    };
+
+    /* ── If already logged in — skip login page ── */
+    if (isLoggedIn()) {
+      window.location.href = "dashboard.html";
+    }
+
+    /* ── Enter key support ── */
+    document.addEventListener("keydown", e => {
+      if (e.key === "Enter") doLogin();
+    });
+
+    /* ── Password show/hide toggle ── */
+    function togglePassword() {
+      const input = document.getElementById("password");
+      const btn   = document.getElementById("eyeBtn");
+      if (input.type === "password") {
+        input.type = "text";
+        btn.textContent = "🙈";
+        btn.title = "Hide password";
+      } else {
+        input.type = "password";
+        btn.textContent = "👁";
+        btn.title = "Show password";
+      }
+    }
+
+    /* ── Show error message ── */
+    function showError(msg) {
+      const err = document.getElementById("errorMsg");
+      const suc = document.getElementById("successMsg");
+      suc.style.display = "none";
+      err.textContent   = "⚠ " + msg;
+      err.style.display = "block";
+    }
+
+    /* ── Show success message ── */
+    function showSuccess(msg) {
+      const err = document.getElementById("errorMsg");
+      const suc = document.getElementById("successMsg");
+      err.style.display = "none";
+      suc.textContent   = "✓ " + msg;
+      suc.style.display = "block";
+    }
+
+    /* ── Main login function ── */
+    async function doLogin() {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+      const btn      = document.getElementById("loginBtn");
+      const btnText  = document.getElementById("loginBtnText");
+
+      /* Basic validation */
+      if (!username || !password) {
+        showError("Please enter username and password");
+        return;
+      }
+
+      /* Loading state */
+      btn.disabled    = true;
+      btnText.textContent = "AUTHENTICATING...";
+
+      /* Call real API via handleLogin() from auth.js */
+      const error = await handleLogin(username, password);
+
+      if (error) {
+        /* Login failed — show error, reset button */
+        showError(error);
+        btn.disabled    = false;
+        btnText.textContent = "INITIATE ACCESS";
+      } else {
+        /* Login succeeded — handleLogin() redirects automatically */
+        showSuccess("Access granted — redirecting...");
+      }
+    }
+  </script>
+</body>
+</html>

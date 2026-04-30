@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SSOD — Create Account</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    body { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+
+    .orb { position:fixed; border-radius:50%; filter:blur(80px); pointer-events:none; opacity:0.1; }
+    .orb-1 { width:400px; height:400px; background:var(--cyan); top:-100px; left:-80px; animation:orbFloat 8s ease-in-out infinite; }
+    .orb-2 { width:350px; height:350px; background:#0040ff; bottom:-80px; right:-60px; animation:orbFloat 10s ease-in-out infinite reverse; }
+    @keyframes orbFloat { 0%,100%{transform:translate(0,0);} 50%{transform:translate(20px,20px);} }
+
+    .corner { position:fixed; width:50px; height:50px; pointer-events:none; }
+    .corner-tl { top:16px; left:16px; border-top:2px solid var(--cyan); border-left:2px solid var(--cyan); }
+    .corner-tr { top:16px; right:16px; border-top:2px solid var(--cyan); border-right:2px solid var(--cyan); }
+    .corner-bl { bottom:16px; left:16px; border-bottom:2px solid var(--cyan); border-left:2px solid var(--cyan); }
+    .corner-br { bottom:16px; right:16px; border-bottom:2px solid var(--cyan); border-right:2px solid var(--cyan); }
+
+    .register-wrap {
+      position:relative; z-index:10;
+      display:flex; flex-direction:column;
+      align-items:center; gap:24px;
+      animation:fadeIn 0.8s ease forwards;
+      width:100%; max-width:500px;
+      padding:20px;
+    }
+
+    .logo-area { text-align:center; }
+    .logo-title {
+      font-family:var(--font-head); font-size:42px; font-weight:700;
+      letter-spacing:10px; color:var(--cyan);
+      text-shadow:0 0 40px rgba(0,212,255,0.5); line-height:1;
+    }
+    .logo-sub {
+      font-family:var(--font-mono); font-size:11px;
+      letter-spacing:3px; color:var(--text-dim); margin-top:6px;
+    }
+
+    .register-card {
+      width:100%; background:var(--panel);
+      border:1px solid var(--border); padding:32px;
+      position:relative;
+      clip-path:polygon(0 0,calc(100% - 20px) 0,100% 20px,100% 100%,20px 100%,0 calc(100% - 20px));
+    }
+    .register-card::before {
+      content:''; position:absolute; inset:0;
+      background:linear-gradient(135deg,rgba(0,212,255,0.04) 0%,transparent 60%);
+      pointer-events:none;
+    }
+
+    .card-head {
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom:24px; padding-bottom:14px; border-bottom:1px solid var(--border);
+    }
+    .card-head-title {
+      font-family:var(--font-head); font-size:16px; font-weight:600;
+      letter-spacing:2px; color:var(--text); text-transform:uppercase;
+    }
+    .new-badge {
+      font-family:var(--font-mono); font-size:10px;
+      color:var(--cyan); border:1px solid var(--cyan);
+      padding:3px 10px; letter-spacing:1px; background:rgba(0,212,255,0.08);
+    }
+
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+
+    .input-group { margin-bottom:16px; }
+    .input-label {
+      display:block; font-family:var(--font-mono); font-size:10px;
+      letter-spacing:2px; color:var(--text-dim); margin-bottom:6px; text-transform:uppercase;
+    }
+    .input-wrap { position:relative; }
+    .input-icon {
+      position:absolute; left:12px; top:50%;
+      transform:translateY(-50%); font-size:13px;
+      color:var(--text-dim); pointer-events:none;
+    }
+    .reg-input {
+      width:100%; padding:11px 40px 11px 36px;
+      background:var(--bg); border:1px solid var(--border);
+      color:var(--text); font-family:var(--font-mono);
+      font-size:12px; outline:none; transition:all 0.2s;
+    }
+    .reg-input:focus { border-color:var(--cyan); box-shadow:0 0 0 2px rgba(0,212,255,0.08); }
+    .reg-input::placeholder { color:var(--text-dim); }
+    .reg-input.valid   { border-color:var(--green) !important; }
+    .reg-input.invalid { border-color:var(--red)   !important; }
+
+    /* Eye toggle */
+    .eye-btn {
+      position:absolute; right:10px; top:50%;
+      transform:translateY(-50%);
+      background:none; border:none; color:var(--text-dim);
+      cursor:pointer; font-size:13px; padding:2px 4px;
+      transition:color 0.2s; z-index:2;
+    }
+    .eye-btn:hover { color:var(--cyan); }
+
+    /* Role selector */
+    .role-select {
+      width:100%; padding:11px 14px;
+      background:var(--bg); border:1px solid var(--border);
+      color:var(--text); font-family:var(--font-mono);
+      font-size:12px; outline:none; cursor:pointer; transition:border-color 0.2s;
+    }
+    .role-select:focus { border-color:var(--cyan); }
+    .role-select option { background:var(--panel); }
+
+    /* Password strength bar */
+    .strength-bar { height:4px; background:var(--border); margin-top:6px; border-radius:2px; overflow:hidden; }
+    .strength-fill { height:100%; border-radius:2px; transition:all 0.4s; width:0%; }
+    .strength-text { font-family:var(--font-mono); font-size:9px; margin-top:4px; letter-spacing:1px; }
+
+    /* Password rules checklist */
+    .pw-rules {
+      margin-top:8px; padding:10px 12px;
+      background:rgba(0,0,0,0.2); border:1px solid var(--border);
+      border-radius:2px; display:none;
+    }
+    .pw-rules.visible { display:block; }
+    .pw-rule {
+      display:flex; align-items:center; gap:8px;
+      font-family:var(--font-mono); font-size:10px;
+      color:var(--text-dim); margin-bottom:4px; transition:color 0.2s;
+    }
+    .pw-rule:last-child { margin-bottom:0; }
+    .pw-rule .rule-icon { font-size:11px; transition:all 0.2s; }
+    .pw-rule.pass { color:var(--green); }
+    .pw-rule.pass .rule-icon::before { content:'✓'; color:var(--green); }
+    .pw-rule.fail .rule-icon::before { content:'✗'; color:var(--red); }
+    .pw-rule:not(.pass):not(.fail) .rule-icon::before { content:'○'; color:var(--text-dim); }
+
+    /* Security score badge */
+    .security-score {
+      display:inline-flex; align-items:center; gap:6px;
+      font-family:var(--font-mono); font-size:10px;
+      padding:4px 10px; border-radius:2px; margin-top:6px;
+      border:1px solid var(--border); transition:all 0.3s;
+    }
+
+    /* Terms */
+    .terms-row {
+      display:flex; align-items:flex-start; gap:10px;
+      margin-bottom:16px; padding:12px;
+      background:rgba(0,212,255,0.04); border:1px solid var(--border);
+    }
+    .terms-check { width:16px; height:16px; margin-top:1px; cursor:pointer; accent-color:var(--cyan); flex-shrink:0; }
+    .terms-text { font-family:var(--font-mono); font-size:10px; color:var(--text-dim); line-height:1.6; }
+    .terms-text a { color:var(--cyan); text-decoration:none; }
+
+    /* Security notice */
+    .security-notice {
+      display:flex; align-items:flex-start; gap:10px;
+      padding:10px 12px; margin-bottom:14px;
+      background:rgba(255,159,74,0.06); border:1px solid rgba(255,159,74,0.3);
+      font-family:var(--font-mono); font-size:10px; color:rgba(255,159,74,0.8);
+      line-height:1.6;
+    }
+
+    .btn-register {
+      width:100%; padding:14px;
+      background:transparent; border:1px solid var(--cyan);
+      color:var(--cyan); font-family:var(--font-head);
+      font-size:16px; font-weight:600;
+      letter-spacing:4px; text-transform:uppercase;
+      cursor:pointer; position:relative; overflow:hidden; transition:all 0.3s;
+    }
+    .btn-register::before {
+      content:''; position:absolute; inset:0;
+      background:var(--cyan); transform:translateX(-100%); transition:transform 0.3s;
+    }
+    .btn-register:hover::before { transform:translateX(0); }
+    .btn-register:hover { color:#000; }
+    .btn-register span { position:relative; z-index:1; }
+    .btn-register:disabled { opacity:0.5; cursor:not-allowed; }
+
+    .error-msg {
+      background:var(--red-dim); border:1px solid var(--red);
+      color:var(--red); padding:10px 14px;
+      font-family:var(--font-mono); font-size:11px;
+      margin-bottom:14px; display:none;
+    }
+    .success-msg {
+      background:var(--green-dim); border:1px solid var(--green);
+      color:var(--green); padding:10px 14px;
+      font-family:var(--font-mono); font-size:11px;
+      margin-bottom:14px; display:none; text-align:center;
+    }
+
+    .login-link {
+      text-align:center; font-family:var(--font-mono);
+      font-size:11px; color:var(--text-dim);
+    }
+    .login-link a { color:var(--cyan); text-decoration:none; }
+    .login-link a:hover { text-decoration:underline; }
+
+    .register-footer {
+      text-align:center; font-family:var(--font-mono);
+      font-size:10px; color:var(--text-dim); letter-spacing:1px;
+    }
+    .register-footer span { color:var(--cyan); }
+
+    .demo-banner {
+      width:100%; padding:10px 16px;
+      background:rgba(0,212,255,0.06); border:1px solid rgba(0,212,255,0.2);
+      display:flex; align-items:center; gap:10px;
+      font-family:var(--font-mono); font-size:11px; color:var(--text-dim);
+    }
+    .demo-banner span { color:var(--cyan); }
+
+    /* Field validation hint */
+    .field-hint {
+      font-family:var(--font-mono); font-size:9px;
+      margin-top:4px; letter-spacing:0.5px; display:none;
+    }
+    .field-hint.show { display:block; }
+    .field-hint.ok  { color:var(--green); }
+    .field-hint.err { color:var(--red); }
+  </style>
+</head>
+<body>
+
+  <div class="grid-bg"></div>
+  <div class="scan-line"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="corner corner-tl"></div>
+  <div class="corner corner-tr"></div>
+  <div class="corner corner-bl"></div>
+  <div class="corner corner-br"></div>
+
+  <div class="register-wrap">
+
+    <div class="logo-area">
+      <div class="logo-title">SSOD</div>
+      <div class="logo-sub">SMART SECURE OPERATIONS & PERFORMANCE DASHBOARD</div>
+    </div>
+
+    <div class="demo-banner" id="demoBanner" style="display:none;">
+      ⚡ <span>You liked what you saw!</span> Create your account to get full access.
+    </div>
+
+    <div class="register-card">
+      <div class="card-head">
+        <div class="card-head-title">🌐 Create Account</div>
+        <div class="new-badge">NEW FRIEND</div>
+      </div>
+
+      <div class="error-msg"   id="errorMsg"></div>
+      <div class="success-msg" id="successMsg">✓ Account created! Redirecting to login...</div>
+
+      <!-- Security notice -->
+      <div class="security-notice">
+        ⚠ This platform is for authorized personnel only. All registration attempts are logged and monitored.
+      </div>
+
+      <!-- Name row -->
+      <div class="form-row">
+        <div class="input-group">
+          <label class="input-label">First Name</label>
+          <div class="input-wrap">
+            <span class="input-icon">👤</span>
+            <input type="text" class="reg-input" id="firstname"
+                   placeholder="First name" autocomplete="off"
+                   oninput="validateName('firstname')"/>
+          </div>
+          <div class="field-hint" id="hint-firstname"></div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Last Name</label>
+          <div class="input-wrap">
+            <span class="input-icon">👤</span>
+            <input type="text" class="reg-input" id="lastname"
+                   placeholder="Last name" autocomplete="off"
+                   oninput="validateName('lastname')"/>
+          </div>
+          <div class="field-hint" id="hint-lastname"></div>
+        </div>
+      </div>
+
+      <!-- Username -->
+      <div class="input-group">
+        <label class="input-label">Username</label>
+        <div class="input-wrap">
+          <span class="input-icon">@</span>
+          <input type="text" class="reg-input" id="username"
+                 placeholder="Choose a username (min. 4 chars, letters/numbers/_)"
+                 autocomplete="off" oninput="validateUsername()"/>
+        </div>
+        <div class="field-hint" id="hint-username"></div>
+      </div>
+
+      <!-- Email -->
+      <div class="input-group">
+        <label class="input-label">Email Address</label>
+        <div class="input-wrap">
+          <span class="input-icon">✉</span>
+          <input type="email" class="reg-input" id="email"
+                 placeholder="your@email.com" oninput="validateEmail()"/>
+        </div>
+        <div class="field-hint" id="hint-email"></div>
+      </div>
+
+      <!-- Password -->
+      <div class="input-group">
+        <label class="input-label">Password</label>
+        <div class="input-wrap">
+          <span class="input-icon">🔑</span>
+          <input type="password" class="reg-input" id="password"
+                 placeholder="Create a strong password"
+                 oninput="checkStrength(this.value)" onfocus="showRules()"/>
+          <button class="eye-btn" type="button" onclick="togglePw('password','eyePw1')" id="eyePw1">👁</button>
+        </div>
+
+        <!-- Strength bar -->
+        <div class="strength-bar">
+          <div class="strength-fill" id="strengthFill"></div>
+        </div>
+        <div class="strength-text" id="strengthText" style="color:var(--text-dim)">Enter a password</div>
+
+        <!-- Security score -->
+        <div class="security-score" id="secScore" style="display:none">
+          <span id="secScoreIcon">🔒</span>
+          <span id="secScoreText">Security score: 0/5</span>
+        </div>
+
+        <!-- Rules checklist -->
+        <div class="pw-rules" id="pwRules">
+          <div class="pw-rule" id="rule-len">
+            <span class="rule-icon"></span> At least 8 characters
+          </div>
+          <div class="pw-rule" id="rule-upper">
+            <span class="rule-icon"></span> At least 1 uppercase letter (A-Z)
+          </div>
+          <div class="pw-rule" id="rule-lower">
+            <span class="rule-icon"></span> At least 1 lowercase letter (a-z)
+          </div>
+          <div class="pw-rule" id="rule-num">
+            <span class="rule-icon"></span> At least 1 number (0-9)
+          </div>
+          <div class="pw-rule" id="rule-special">
+            <span class="rule-icon"></span> At least 1 special character (!@#$%^&*)
+          </div>
+          <div class="pw-rule" id="rule-nouser">
+            <span class="rule-icon"></span> Must not contain your username
+          </div>
+        </div>
+      </div>
+
+      <!-- Confirm password -->
+      <div class="input-group">
+        <label class="input-label">Confirm Password</label>
+        <div class="input-wrap">
+          <span class="input-icon">🔑</span>
+          <input type="password" class="reg-input" id="confirmPassword"
+                 placeholder="Repeat your password" oninput="validateConfirm()"/>
+          <button class="eye-btn" type="button" onclick="togglePw('confirmPassword','eyePw2')" id="eyePw2">👁</button>
+        </div>
+        <div class="field-hint" id="hint-confirm"></div>
+      </div>
+
+      <!-- Role -->
+      <div class="input-group">
+        <label class="input-label">Access Role</label>
+        <select class="role-select" id="role">
+          <option value="viewer">👁 Viewer — Read-only access</option>
+          <option value="operator">⚙ Operator — Standard access</option>
+        </select>
+      </div>
+
+      <!-- Terms -->
+      <div class="terms-row">
+        <input type="checkbox" class="terms-check" id="terms"/>
+        <div class="terms-text">
+          I agree to the <a href="#">Terms of Service</a> and
+          <a href="#">Privacy Policy</a> of SSOD. I understand this
+          platform is for authorized monitoring use only.
+        </div>
+      </div>
+
+      <button class="btn-register" id="registerBtn" onclick="doRegister()">
+        <span id="registerBtnText">⚡ CREATE ACCOUNT</span>
+      </button>
+    </div>
+
+    <div class="login-link">
+      Already have an account? <a href="login.html">Login here →</a>
+    </div>
+
+    <div class="register-footer">
+      SSOD v1.0.0 &nbsp;|&nbsp; <span>SYLVAH™</span> &nbsp;|&nbsp; © 2026
+    </div>
+
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    /* ── SYLVAH™ Signature ── */
+    const _registerSignature = {
+      id: "SSOD-SYL-2026-I2L5",
+      author: "SYLVAH™",
+      created: "2026-04-05",
+      version: "2.0.0",
+      module: "register.html",
+      hash: "g9d4b7e2f1c8a5d3"
+    };
+    const _regMeta = { catalogId: "SYL-REG-001", sourceCode: "SSOD2026", revision: "SYL-v2" };
+
+    /* ── Demo banner ── */
+    if (localStorage.getItem("ssod_demo") === "true") {
+      document.getElementById("demoBanner").style.display = "flex";
+    }
+
+    /* ── Already logged in ── */
+    if (isLoggedIn() && !isDemo()) {
+      window.location.href = "dashboard.html";
+    }
+
+    /* ── Password show/hide ── */
+    function togglePw(inputId, btnId) {
+      const input = document.getElementById(inputId);
+      const btn   = document.getElementById(btnId);
+      input.type  = input.type === "password" ? "text" : "password";
+      btn.textContent = input.type === "password" ? "👁" : "🙈";
+    }
+
+    /* ── Show rules on focus ── */
+    function showRules() {
+      document.getElementById("pwRules").classList.add("visible");
+      document.getElementById("secScore").style.display = "inline-flex";
+    }
+
+    /* ── Password strength + rules checker ── */
+    function checkStrength(val) {
+      const username = document.getElementById("username").value.trim().toLowerCase();
+      const fill     = document.getElementById("strengthFill");
+      const text     = document.getElementById("strengthText");
+      const score_el = document.getElementById("secScoreText");
+      const score_ic = document.getElementById("secScoreIcon");
+
+      if (!val) {
+        fill.style.width = "0%";
+        text.textContent = "Enter a password";
+        text.style.color = "var(--text-dim)";
+        resetRules();
+        return;
+      }
+
+      /* Individual rule checks */
+      const rules = {
+        len:     val.length >= 8,
+        upper:   /[A-Z]/.test(val),
+        lower:   /[a-z]/.test(val),
+        num:     /[0-9]/.test(val),
+        special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(val),
+        nouser:  !username || !val.toLowerCase().includes(username)
+      };
+
+      /* Update rule UI */
+      setRule("rule-len",     rules.len);
+      setRule("rule-upper",   rules.upper);
+      setRule("rule-lower",   rules.lower);
+      setRule("rule-num",     rules.num);
+      setRule("rule-special", rules.special);
+      setRule("rule-nouser",  rules.nouser);
+
+      /* Score = how many of the 5 main rules pass */
+      const score = [rules.len, rules.upper, rules.lower, rules.num, rules.special]
+                    .filter(Boolean).length;
+
+      /* Strength bar */
+      const levels = [
+        { w:"10%", c:"#ff4d6d", t:"VERY WEAK"  },
+        { w:"25%", c:"#ff4d6d", t:"WEAK"       },
+        { w:"50%", c:"var(--orange)", t:"FAIR"  },
+        { w:"75%", c:"var(--orange)", t:"GOOD"  },
+        { w:"90%", c:"var(--green)",  t:"STRONG"},
+        { w:"100%",c:"#00ff88",       t:"VERY STRONG" },
+      ];
+      const lv = levels[Math.min(score, 5)];
+      fill.style.width      = lv.w;
+      fill.style.background = lv.c;
+      text.textContent      = lv.t;
+      text.style.color      = lv.c;
+
+      /* Security score badge */
+      const icons = ["💀","🔓","⚠️","🔒","🔐","🛡️"];
+      score_ic.textContent = icons[score];
+      score_el.textContent = `Security score: ${score}/5`;
+
+      /* Also re-validate confirm field if it has a value */
+      if (document.getElementById("confirmPassword").value) validateConfirm();
+    }
+
+    function setRule(id, pass) {
+      const el = document.getElementById(id);
+      el.classList.toggle("pass", pass);
+      el.classList.toggle("fail", !pass);
+    }
+
+    function resetRules() {
+      ["rule-len","rule-upper","rule-lower","rule-num","rule-special","rule-nouser"]
+        .forEach(id => {
+          document.getElementById(id).classList.remove("pass","fail");
+        });
+    }
+
+    /* ── Field validators ── */
+    function validateName(field) {
+      const el   = document.getElementById(field);
+      const hint = document.getElementById("hint-" + field);
+      const val  = el.value.trim();
+      if (!val) { clearHint(el, hint); return; }
+      if (val.length < 2) {
+        setHint(el, hint, "Minimum 2 characters", "err");
+      } else if (!/^[A-Za-zÀ-ÿ '-]+$/.test(val)) {
+        setHint(el, hint, "Letters only", "err");
+      } else {
+        setHint(el, hint, "✓ Looks good", "ok");
+      }
+    }
+
+    function validateUsername() {
+      const el   = document.getElementById("username");
+      const hint = document.getElementById("hint-username");
+      const val  = el.value.trim();
+      if (!val) { clearHint(el, hint); return; }
+      if (val.length < 4) {
+        setHint(el, hint, "Minimum 4 characters", "err");
+      } else if (!/^[a-zA-Z0-9_.]+$/.test(val)) {
+        setHint(el, hint, "Only letters, numbers, _ and . allowed", "err");
+      } else if (/^[0-9]/.test(val)) {
+        setHint(el, hint, "Cannot start with a number", "err");
+      } else {
+        setHint(el, hint, "✓ Valid username", "ok");
+      }
+      /* Re-run password check to update "no username" rule */
+      const pw = document.getElementById("password").value;
+      if (pw) checkStrength(pw);
+    }
+
+    function validateEmail() {
+      const el   = document.getElementById("email");
+      const hint = document.getElementById("hint-email");
+      const val  = el.value.trim();
+      if (!val) { clearHint(el, hint); return; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+        setHint(el, hint, "Enter a valid email address", "err");
+      } else {
+        setHint(el, hint, "✓ Valid email", "ok");
+      }
+    }
+
+    function validateConfirm() {
+      const el   = document.getElementById("confirmPassword");
+      const hint = document.getElementById("hint-confirm");
+      const pw   = document.getElementById("password").value;
+      const val  = el.value;
+      if (!val) { clearHint(el, hint); return; }
+      if (val !== pw) {
+        setHint(el, hint, "Passwords do not match", "err");
+      } else {
+        setHint(el, hint, "✓ Passwords match", "ok");
+      }
+    }
+
+    function setHint(input, hint, msg, type) {
+      hint.textContent  = msg;
+      hint.className    = `field-hint show ${type}`;
+      input.className   = input.className.replace(/\b(valid|invalid)\b/g, '').trim();
+      input.classList.add(type === "ok" ? "valid" : "invalid");
+    }
+
+    function clearHint(input, hint) {
+      hint.className    = "field-hint";
+      input.className   = input.className.replace(/\b(valid|invalid)\b/g, '').trim();
+    }
+
+    /* ── Show error ── */
+    function showError(msg) {
+      const el = document.getElementById("errorMsg");
+      el.textContent   = "⚠ " + msg;
+      el.style.display = "block";
+      el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    function hideError() {
+      document.getElementById("errorMsg").style.display = "none";
+    }
+
+    /* ── Full validation before submit ── */
+    function fullValidate() {
+      const firstname = document.getElementById("firstname").value.trim();
+      const lastname  = document.getElementById("lastname").value.trim();
+      const username  = document.getElementById("username").value.trim();
+      const email     = document.getElementById("email").value.trim();
+      const password  = document.getElementById("password").value;
+      const confirm   = document.getElementById("confirmPassword").value;
+      const terms     = document.getElementById("terms").checked;
+
+      if (!firstname || !lastname) return "Please enter your first and last name";
+      if (firstname.length < 2 || lastname.length < 2) return "Names must be at least 2 characters";
+      if (!username) return "Username is required";
+      if (username.length < 4) return "Username must be at least 4 characters";
+      if (!/^[a-zA-Z0-9_.]+$/.test(username)) return "Username: only letters, numbers, _ and . allowed";
+      if (/^[0-9]/.test(username)) return "Username cannot start with a number";
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Enter a valid email address";
+      if (!password) return "Password is required";
+      if (password.length < 8)    return "Password must be at least 8 characters";
+      if (!/[A-Z]/.test(password)) return "Password must contain at least 1 uppercase letter";
+      if (!/[a-z]/.test(password)) return "Password must contain at least 1 lowercase letter";
+      if (!/[0-9]/.test(password)) return "Password must contain at least 1 number";
+      if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(password))
+        return "Password must contain at least 1 special character (!@#$%^&*)";
+      if (password.toLowerCase().includes(username.toLowerCase()))
+        return "Password must not contain your username";
+      if (password !== confirm) return "Passwords do not match";
+      if (!terms) return "Please accept the Terms of Service to continue";
+      return null; // all good
+    }
+
+    /* ── Register ── */
+    async function doRegister() {
+      hideError();
+
+      const err = fullValidate();
+      if (err) { showError(err); return; }
+
+      const username = document.getElementById("username").value.trim();
+      const email    = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const role     = document.getElementById("role").value;
+      const btn      = document.getElementById("registerBtn");
+      const btnText  = document.getElementById("registerBtnText");
+
+      btn.disabled   = true;
+      btnText.textContent = "CREATING ACCOUNT...";
+
+      try {
+        const res  = await fetch("http://localhost:5000/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, email, password, role })
+        });
+        const data = await res.json();
+
+        if (res.status === 201) {
+          localStorage.removeItem("ssod_demo");
+          document.getElementById("successMsg").style.display = "block";
+          setTimeout(() => { window.location.href = "login.html"; }, 2000);
+        } else {
+          showError(data.error || "Registration failed — please try again");
+          btn.disabled  = false;
+          btnText.textContent = "⚡ CREATE ACCOUNT";
+        }
+      } catch(e) {
+        showError("Connection error — make sure the Flask server is running");
+        btn.disabled  = false;
+        btnText.textContent = "⚡ CREATE ACCOUNT";
+      }
+    }
+
+    /* ── Enter key ── */
+    document.addEventListener("keydown", e => {
+      if (e.key === "Enter") doRegister();
+    });
+  </script>
+</body>
+</html>

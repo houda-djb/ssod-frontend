@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>SSOD | Incident Management</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    /* =====================================================
+       SSOD — INCIDENTS.HTML
+       Author: SYLVAH™ | SYL-INC-001 | v1.0.0 | 2026
+    ===================================================== */
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --bg-deep:#0a0f1c;--card-bg:#12172b;--card-elevated:#171e34;
+      --border-glow:#2a3a60;--border-subtle:#1f2a40;
+      --text-primary:#eef2ff;--text-secondary:#8e9bb5;--text-muted:#5b6b8c;
+      --cyan-accent:#00e0ff;--green-accent:#1effbc;--orange-accent:#ff9f4a;
+      --red-accent:#ff4d6d;--purple-accent:#b77cff;--gold-accent:#ffd966;
+      --font-display:'Inter',sans-serif;--font-mono:'JetBrains Mono',monospace;
+    }
+    html,body{height:100%;overflow:hidden;background:var(--bg-deep);font-family:var(--font-display);color:var(--text-primary)}
+    body::before{content:"";position:fixed;inset:0;background-image:linear-gradient(rgba(0,224,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,224,255,.02) 1px,transparent 1px);background-size:32px 32px;pointer-events:none;z-index:0}
+    .scan-line{position:fixed;top:0;left:0;width:100%;height:3px;background:linear-gradient(90deg,transparent,var(--cyan-accent),transparent);opacity:.28;pointer-events:none;z-index:999;animation:scanMove 10s linear infinite}
+    @keyframes scanMove{0%{top:0}100%{top:100%}}
+
+    /* TOPBAR */
+    .topbar{position:fixed;top:0;left:0;right:0;height:64px;background:rgba(14,19,34,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--border-glow);display:flex;align-items:center;justify-content:space-between;padding:0 28px;z-index:100}
+    .logo-area{display:flex;align-items:baseline;gap:12px}
+    .logo{font-family:var(--font-mono);font-size:26px;font-weight:700;letter-spacing:3px;background:linear-gradient(135deg,var(--cyan-accent),#6c8cff);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 6px rgba(0,224,255,.3);text-decoration:none}
+    .badge-sys{font-size:10px;font-family:var(--font-mono);background:rgba(0,224,255,.1);border:1px solid var(--cyan-accent);padding:2px 8px;border-radius:20px;color:var(--cyan-accent);letter-spacing:1px}
+    .system-status{display:flex;align-items:center;gap:10px;background:rgba(30,40,60,.5);padding:6px 18px;border-radius:40px;border-left:2px solid var(--green-accent)}
+    .status-led{width:8px;height:8px;background:var(--green-accent);border-radius:50%;box-shadow:0 0 8px var(--green-accent);animation:pulseG 1.8s infinite}
+    @keyframes pulseG{0%,100%{opacity:1}50%{opacity:.35}}
+    .time-stamp{font-family:var(--font-mono);font-size:13px;color:var(--text-secondary)}
+    .admin-profile{display:flex;align-items:center;gap:20px}
+    .admin-name{font-size:13px;font-weight:500;letter-spacing:.5px}
+    .logout-btn{background:transparent;border:1px solid var(--border-glow);color:var(--text-secondary);padding:6px 14px;border-radius:6px;font-size:12px;font-family:var(--font-mono);cursor:pointer;transition:.2s;text-decoration:none}
+    .logout-btn:hover{border-color:var(--red-accent);color:var(--red-accent)}
+
+    /* SIDEBAR */
+    .sidebar{position:fixed;top:64px;left:0;width:260px;height:calc(100vh - 64px);background:rgba(14,19,34,.97);border-right:1px solid var(--border-subtle);padding:28px 0;overflow-y:auto;z-index:90}
+    .nav-section{margin-bottom:28px}
+    .nav-caption{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);padding:0 24px;margin-bottom:12px}
+    .nav-item{display:flex;align-items:center;gap:14px;padding:12px 24px;color:var(--text-secondary);font-size:14px;font-weight:500;cursor:pointer;border-left:3px solid transparent;transition:all .2s;text-decoration:none}
+    .nav-item i{width:22px;font-size:1rem;color:var(--cyan-accent)}
+    .nav-item:hover,.nav-item.active{background:rgba(0,224,255,.08);color:var(--cyan-accent);border-left-color:var(--cyan-accent)}
+    .alert-badge{margin-left:auto;background:var(--red-accent);color:#fff;font-size:10px;padding:2px 7px;border-radius:30px;font-weight:bold}
+
+    /* MAIN */
+    .main{margin-left:260px;margin-top:64px;height:calc(100vh - 64px);overflow-y:auto;padding:24px 28px;position:relative;z-index:2}
+    .main::-webkit-scrollbar{width:5px}
+    .main::-webkit-scrollbar-thumb{background:var(--border-glow);border-radius:10px}
+
+    /* PAGE HEADER */
+    .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+    .page-title-group{display:flex;align-items:center;gap:14px}
+    .page-icon{width:44px;height:44px;background:rgba(255,159,74,.08);border:1px solid var(--orange-accent);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--orange-accent);font-size:18px;box-shadow:0 0 14px rgba(255,159,74,.15)}
+    .page-title{font-family:var(--font-mono);font-size:20px;font-weight:700;letter-spacing:2px}
+    .page-subtitle{font-size:12px;color:var(--text-muted);margin-top:2px}
+    .header-controls{display:flex;align-items:center;gap:10px}
+
+    /* BUTTONS */
+    .btn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:8px;font-size:12px;font-family:var(--font-mono);cursor:pointer;transition:.2s;border:1px solid}
+    .btn-ghost{background:var(--card-bg);border-color:var(--border-subtle);color:var(--text-secondary)}
+    .btn-ghost:hover{border-color:var(--cyan-accent);color:var(--cyan-accent)}
+    .btn-orange{background:rgba(255,159,74,.1);border-color:var(--orange-accent);color:var(--orange-accent)}
+    .btn-orange:hover{background:rgba(255,159,74,.2)}
+
+    /* STATUS PIPELINE */
+    .pipeline{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;position:relative}
+    .pipeline::before{content:"";position:absolute;top:50%;left:12.5%;right:12.5%;height:2px;background:linear-gradient(90deg,var(--orange-accent),var(--gold-accent),var(--cyan-accent),var(--green-accent));opacity:.3;pointer-events:none}
+    .pipe-card{background:var(--card-bg);border:1px solid var(--border-subtle);border-radius:16px;padding:18px;text-align:center;position:relative;cursor:pointer;transition:all .25s}
+    .pipe-card::before{content:"";position:absolute;top:0;left:0;width:100%;height:2px;border-radius:16px 16px 0 0}
+    .pipe-card.open::before      {background:var(--orange-accent)}
+    .pipe-card.in-progress::before{background:var(--gold-accent)}
+    .pipe-card.assigned::before  {background:var(--cyan-accent)}
+    .pipe-card.resolved::before  {background:var(--green-accent)}
+    .pipe-card:hover,.pipe-card.active{border-color:var(--border-glow);box-shadow:0 4px 20px rgba(0,0,0,.3)}
+    .pipe-icon{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:16px}
+    .open      .pipe-icon{background:rgba(255,159,74,.12);color:var(--orange-accent)}
+    .in-progress .pipe-icon{background:rgba(255,217,102,.12);color:var(--gold-accent)}
+    .assigned  .pipe-icon{background:rgba(0,224,255,.12);color:var(--cyan-accent)}
+    .resolved  .pipe-icon{background:rgba(30,255,188,.12);color:var(--green-accent)}
+    .pipe-label{font-size:10px;font-family:var(--font-mono);letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px}
+    .pipe-count{font-family:var(--font-mono);font-size:32px;font-weight:700;line-height:1;margin-bottom:4px}
+    .open       .pipe-count{color:var(--orange-accent)}
+    .in-progress .pipe-count{color:var(--gold-accent)}
+    .assigned   .pipe-count{color:var(--cyan-accent)}
+    .resolved   .pipe-count{color:var(--green-accent)}
+    .pipe-sub{font-size:10px;color:var(--text-muted);font-family:var(--font-mono)}
+
+    /* PRIORITY MATRIX */
+    .two-col{display:grid;grid-template-columns:auto 1fr;gap:16px;margin-bottom:20px;align-items:start}
+    .priority-matrix{background:var(--card-bg);border:1px solid var(--border-subtle);border-radius:18px;padding:18px 20px;min-width:260px}
+    .matrix-title{font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-secondary);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+    .matrix-title i{color:var(--orange-accent)}
+    .matrix-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:8px}
+    .matrix-cell{border-radius:12px;padding:14px 12px;text-align:center;border:1px solid;cursor:pointer;transition:.2s}
+    .matrix-cell:hover{opacity:.85;transform:scale(1.02)}
+    .m-critical{background:rgba(255,77,109,.08);border-color:rgba(255,77,109,.4);color:var(--red-accent)}
+    .m-high    {background:rgba(255,159,74,.08);border-color:rgba(255,159,74,.4);color:var(--orange-accent)}
+    .m-medium  {background:rgba(255,217,102,.08);border-color:rgba(255,217,102,.4);color:var(--gold-accent)}
+    .m-low     {background:rgba(30,255,188,.08);border-color:rgba(30,255,188,.4);color:var(--green-accent)}
+    .m-label{font-size:9px;font-family:var(--font-mono);letter-spacing:1px;opacity:.7;margin-bottom:4px}
+    .m-count{font-family:var(--font-mono);font-size:22px;font-weight:700}
+
+    /* TOOLBAR */
+    .toolbar{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+    .search-box{flex:1;min-width:200px;max-width:320px;position:relative}
+    .search-box input{width:100%;background:var(--card-bg);border:1px solid var(--border-subtle);border-radius:8px;padding:8px 12px 8px 36px;font-size:12px;font-family:var(--font-mono);color:var(--text-primary);outline:none;transition:.2s}
+    .search-box input:focus{border-color:var(--orange-accent)}
+    .search-box input::placeholder{color:var(--text-muted)}
+    .search-box i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:12px}
+    .filter-btn{padding:6px 12px;border-radius:6px;font-size:11px;font-family:var(--font-mono);cursor:pointer;border:1px solid var(--border-subtle);background:var(--card-bg);color:var(--text-muted);transition:.2s}
+    .filter-btn:hover,.filter-btn.active{border-color:var(--orange-accent);color:var(--orange-accent);background:rgba(255,159,74,.06)}
+
+    /* TABLE */
+    .table-card{background:var(--card-bg);border:1px solid var(--border-subtle);border-radius:18px;overflow:hidden}
+    .table-card-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border-subtle)}
+    .table-card-title{font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-secondary);display:flex;align-items:center;gap:8px}
+    .table-card-title i{color:var(--orange-accent)}
+    .tbl{width:100%;border-collapse:collapse}
+    .tbl thead th{padding:11px 16px;text-align:left;font-family:var(--font-mono);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-muted);font-weight:500;border-bottom:1px solid var(--border-subtle);white-space:nowrap}
+    .tbl tbody tr{border-bottom:1px solid rgba(31,42,64,.5);transition:background .15s}
+    .tbl tbody tr:hover{background:rgba(255,159,74,.03)}
+    .tbl tbody td{padding:12px 16px;color:var(--text-secondary);font-size:12px;vertical-align:middle}
+    .td-mono{font-family:var(--font-mono);font-size:11px}
+    .td-primary{color:var(--text-primary);font-weight:500}
+
+    /* BADGES */
+    .sev{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:10px;font-family:var(--font-mono);font-weight:600;border:1px solid;white-space:nowrap}
+    .sev-low     {color:var(--green-accent);border-color:rgba(30,255,188,.4);background:rgba(30,255,188,.07)}
+    .sev-medium  {color:var(--gold-accent);border-color:rgba(255,217,102,.4);background:rgba(255,217,102,.07)}
+    .sev-high    {color:var(--orange-accent);border-color:rgba(255,159,74,.4);background:rgba(255,159,74,.07)}
+    .sev-critical{color:var(--red-accent);border-color:rgba(255,77,109,.4);background:rgba(255,77,109,.07)}
+
+    .status-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:10px;font-family:var(--font-mono);font-weight:600;border:1px solid;white-space:nowrap;cursor:pointer}
+    .s-open        {color:var(--orange-accent);border-color:rgba(255,159,74,.4);background:rgba(255,159,74,.07)}
+    .s-in-progress {color:var(--gold-accent);border-color:rgba(255,217,102,.4);background:rgba(255,217,102,.07)}
+    .s-assigned    {color:var(--cyan-accent);border-color:rgba(0,224,255,.4);background:rgba(0,224,255,.07)}
+    .s-resolved    {color:var(--green-accent);border-color:rgba(30,255,188,.4);background:rgba(30,255,188,.07)}
+
+    .assign-btn{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;font-size:10px;font-family:var(--font-mono);cursor:pointer;border:1px solid rgba(0,224,255,.3);background:rgba(0,224,255,.07);color:var(--cyan-accent);transition:.2s}
+    .assign-btn:hover{background:rgba(0,224,255,.15)}
+    .advance-btn{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;font-size:10px;font-family:var(--font-mono);cursor:pointer;border:1px solid rgba(255,159,74,.3);background:rgba(255,159,74,.07);color:var(--orange-accent);transition:.2s}
+    .advance-btn:hover{background:rgba(255,159,74,.15)}
+
+    /* MODAL */
+    .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:500;align-items:center;justify-content:center}
+    .modal-backdrop.open{display:flex}
+    .modal{background:#12172b;border:1px solid var(--border-glow);border-radius:20px;padding:28px;width:500px;max-width:95vw}
+    .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+    .modal-title{font-family:var(--font-mono);font-size:14px;font-weight:700;letter-spacing:1.5px}
+    .modal-close{background:transparent;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;transition:.2s}
+    .modal-close:hover{color:var(--red-accent)}
+    .form-group{margin-bottom:14px}
+    .form-label{display:block;font-size:10px;font-family:var(--font-mono);letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:7px}
+    .form-control{width:100%;background:#0e1322;border:1px solid var(--border-subtle);border-radius:8px;padding:9px 12px;font-size:12px;font-family:var(--font-mono);color:var(--text-primary);outline:none;transition:.2s}
+    .form-control:focus{border-color:var(--orange-accent)}
+    .form-control::placeholder{color:var(--text-muted)}
+    select.form-control option{background:#12172b}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+    .toast{position:fixed;bottom:28px;right:28px;background:#12172b;border:1px solid var(--green-accent);border-radius:12px;padding:14px 20px;font-family:var(--font-mono);font-size:12px;color:var(--green-accent);z-index:600;display:none;align-items:center;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+    .toast.show{display:flex;animation:slideUp .3s ease}
+    @keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+    .empty-state{padding:48px;text-align:center;color:var(--text-muted);font-family:var(--font-mono);font-size:12px}
+    .empty-state i{font-size:32px;margin-bottom:12px;display:block;opacity:.4}
+    .pagination{display:flex;align-items:center;gap:8px;padding:14px 20px;border-top:1px solid var(--border-subtle);justify-content:flex-end}
+    .pg-btn{background:var(--card-bg);border:1px solid var(--border-subtle);color:var(--text-muted);padding:5px 10px;border-radius:6px;font-family:var(--font-mono);font-size:11px;cursor:pointer;transition:.2s}
+    .pg-btn:hover,.pg-btn.active{border-color:var(--orange-accent);color:var(--orange-accent)}
+    .pg-info{font-family:var(--font-mono);font-size:11px;color:var(--text-muted)}
+    .assignee-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--font-mono);color:var(--purple-accent);background:rgba(183,124,255,.07);border:1px solid rgba(183,124,255,.3);padding:2px 8px;border-radius:6px}
+  </style>
+</head>
+<body>
+
+<script>
+  const PROJECT_SIGNATURE={id:"SSOD-SYL-2026-1NC1",author:"SYLVAH™",created:"2026-04-21",version:"1.0.0",module:"incidents.html",hash:"1nc1d3nt_m4n4g3m3nt"};
+  window.__ssod_auth__=PROJECT_SIGNATURE;
+  const _meta={catalogId:"SYL-INC-001",type:"incident_management",project:"SSOD"};
+</script>
+
+<div class="scan-line"></div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo-area">
+    <a href="dashboard.html" class="logo">SSOD</a>
+    <div class="badge-sys">SMART SECURE OPS</div>
+  </div>
+  <div class="system-status">
+    <div class="status-led"></div>
+    <span style="font-size:12px;font-weight:500;letter-spacing:.5px">SYSTEM ONLINE</span>
+    <div class="time-stamp" id="liveTime"></div>
+  </div>
+  <div class="admin-profile">
+    <div class="admin-name"><i class="fas fa-user-shield" style="margin-right:6px;color:var(--cyan-accent)"></i>Admin · SYLVAH</div>
+    <a href="login.html" class="logout-btn"><i class="fas fa-sign-out-alt"></i> LOGOUT</a>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="nav-section">
+    <div class="nav-caption"><i class="fas fa-cube" style="margin-right:6px"></i>OPERATIONAL SUITE</div>
+    <a href="dashboard.html"   class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+    <a href="performance.html" class="nav-item"><i class="fas fa-chart-line"></i> Performance</a>
+    <a href="alerts.html"      class="nav-item"><i class="fas fa-bell"></i> Alerts <span class="alert-badge">3</span></a>
+    <a href="logs.html"        class="nav-item"><i class="fas fa-history"></i> Activity Logs</a>
+    <a href="incidents.html"   class="nav-item active"><i class="fas fa-fire"></i> Incidents</a>
+    <a href="dashboard.html"   class="nav-item"><i class="fas fa-database"></i> Live Data Stream</a>
+  </div>
+  <div class="nav-section">
+    <div class="nav-caption"><i class="fas fa-lock" style="margin-right:6px"></i>ACCESS CONTROL</div>
+    <a href="users.html" class="nav-item"><i class="fas fa-users"></i> User Management</a>
+    <a href="#"          class="nav-item"><i class="fas fa-user-tag"></i> Role Manager</a>
+    <a href="#"          class="nav-item"><i class="fas fa-shield-alt"></i> Security Center</a>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <div class="page-icon"><i class="fas fa-fire"></i></div>
+      <div>
+        <div class="page-title">INCIDENT MANAGEMENT</div>
+        <div class="page-subtitle">Filtered from /api/alerts/ · category=incident · Status pipeline: Open → In Progress → Resolved</div>
+      </div>
+    </div>
+    <div class="header-controls">
+      <button class="btn btn-ghost" onclick="exportIncidents()"><i class="fas fa-download"></i> EXPORT CSV</button>
+      <button class="btn btn-orange" onclick="openModal()"><i class="fas fa-plus"></i> CREATE INCIDENT</button>
+    </div>
+  </div>
+
+  <!-- STATUS PIPELINE -->
+  <div class="pipeline">
+    <div class="pipe-card open" onclick="setPipeFilter('open')">
+      <div class="pipe-icon"><i class="fas fa-exclamation-circle"></i></div>
+      <div class="pipe-label">OPEN</div>
+      <div class="pipe-count" id="pipe-open">0</div>
+      <div class="pipe-sub">Unresolved</div>
+    </div>
+    <div class="pipe-card in-progress" onclick="setPipeFilter('in-progress')">
+      <div class="pipe-icon"><i class="fas fa-spinner"></i></div>
+      <div class="pipe-label">IN PROGRESS</div>
+      <div class="pipe-count" id="pipe-inprogress">0</div>
+      <div class="pipe-sub">Being worked on</div>
+    </div>
+    <div class="pipe-card assigned" onclick="setPipeFilter('assigned')">
+      <div class="pipe-icon"><i class="fas fa-user-check"></i></div>
+      <div class="pipe-label">ASSIGNED</div>
+      <div class="pipe-count" id="pipe-assigned">0</div>
+      <div class="pipe-sub">Team allocated</div>
+    </div>
+    <div class="pipe-card resolved" onclick="setPipeFilter('resolved')">
+      <div class="pipe-icon"><i class="fas fa-check-double"></i></div>
+      <div class="pipe-label">RESOLVED</div>
+      <div class="pipe-count" id="pipe-resolved">0</div>
+      <div class="pipe-sub">Closed</div>
+    </div>
+  </div>
+
+  <!-- PRIORITY MATRIX + TOOLBAR -->
+  <div class="two-col">
+    <div class="priority-matrix">
+      <div class="matrix-title"><i class="fas fa-th"></i> PRIORITY MATRIX</div>
+      <div class="matrix-grid">
+        <div class="matrix-cell m-critical" onclick="setPriorityFilter('critical')">
+          <div class="m-label">CRITICAL</div>
+          <div class="m-count" id="m-critical">0</div>
+        </div>
+        <div class="matrix-cell m-high" onclick="setPriorityFilter('high')">
+          <div class="m-label">HIGH</div>
+          <div class="m-count" id="m-high">0</div>
+        </div>
+        <div class="matrix-cell m-medium" onclick="setPriorityFilter('medium')">
+          <div class="m-label">MEDIUM</div>
+          <div class="m-count" id="m-medium">0</div>
+        </div>
+        <div class="matrix-cell m-low" onclick="setPriorityFilter('low')">
+          <div class="m-label">LOW</div>
+          <div class="m-count" id="m-low">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <!-- TOOLBAR -->
+      <div class="toolbar" style="margin-bottom:14px">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input type="text" id="searchInput" placeholder="Search by title, source, assignee..." oninput="renderTable()">
+        </div>
+        <button class="filter-btn active" onclick="setPipeFilter('all',this)">ALL STATUS</button>
+        <button class="filter-btn" onclick="setPipeFilter('open',this)">OPEN</button>
+        <button class="filter-btn" onclick="setPipeFilter('in-progress',this)">IN PROGRESS</button>
+        <button class="filter-btn" onclick="setPipeFilter('assigned',this)">ASSIGNED</button>
+        <button class="filter-btn" onclick="setPipeFilter('resolved',this)">RESOLVED</button>
+      </div>
+
+      <!-- TABLE -->
+      <div class="table-card">
+        <div class="table-card-header">
+          <div class="table-card-title"><i class="fas fa-fire-alt"></i> INCIDENT RECORDS</div>
+          <span id="tableCount" style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)"></span>
+        </div>
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>PRIORITY</th>
+              <th>TITLE</th>
+              <th>SOURCE</th>
+              <th>STATUS</th>
+              <th>ASSIGNEE</th>
+              <th>CREATED</th>
+              <th>ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody id="incBody"></tbody>
+        </table>
+        <div id="emptyState" class="empty-state" style="display:none">
+          <i class="fas fa-fire-extinguisher"></i>No incidents match your filters.
+        </div>
+        <div class="pagination" id="paginationArea"></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- CREATE INCIDENT MODAL -->
+<div class="modal-backdrop" id="createModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title"><i class="fas fa-fire" style="margin-right:8px;color:var(--orange-accent)"></i>CREATE INCIDENT</div>
+      <button class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Incident Title</label>
+      <input class="form-control" id="f-title" placeholder="Describe the incident...">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Priority</label>
+        <select class="form-control" id="f-priority">
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high" selected>High</option>
+          <option value="critical">Critical</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Source System</label>
+        <input class="form-control" id="f-source" placeholder="e.g. ids-engine, firewall">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Assign To</label>
+        <select class="form-control" id="f-assignee">
+          <option>Team Alpha</option>
+          <option>Team Beta</option>
+          <option>Team Sigma</option>
+          <option>Operator A</option>
+          <option>Operator B</option>
+          <option>Unassigned</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Initial Status</label>
+        <select class="form-control" id="f-status">
+          <option value="open">Open</option>
+          <option value="in-progress">In Progress</option>
+          <option value="assigned">Assigned</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <textarea class="form-control" id="f-desc" rows="3" placeholder="Detailed incident description..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">CANCEL</button>
+      <button class="btn btn-orange" onclick="createIncident()"><i class="fas fa-fire"></i> CREATE</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toastMsg"></span></div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+requireAuth();
+
+function updateClock(){
+  const n=new Date();let h=n.getHours(),m=n.getMinutes();
+  const ap=h>=12?'PM':'AM';h=h%12||12;
+  const p=x=>String(x).padStart(2,'0');
+  document.getElementById('liveTime').textContent=`${p(h)}:${p(m)} ${ap} · ${n.getMonth()+1}/${n.getDate()}/${n.getFullYear()}`;
+}
+updateClock();setInterval(updateClock,1000);
+
+let incidents=[];
+const STATUS_ORDER=['open','in-progress','assigned','resolved'];
+let pipeFilter='all', priorFilter='all', currentPage=1;
+const PAGE_SIZE=8;
+
+async function loadIncidents(){
+  // Incidents = alerts with category='incident' OR all alerts used as incidents
+  const res=await Alerts.getAll({limit:200});
+  if(!res||res.status!==200){showToast('Failed to load incidents','red');return;}
+  // Map alert fields to incident fields
+  incidents=res.data.map(a=>({
+    id:a.id,
+    priority:a.severity,
+    title:a.title,
+    source:a.source||'—',
+    status:a.status==='resolved'?'resolved':'open',
+    assignee:'Unassigned',
+    created:formatTime(a.created_at),
+    _raw:a
+  }));
+  renderTable();
+}
+
+function setPipeFilter(val,btn){
+  pipeFilter=val;
+  document.querySelectorAll('.toolbar .filter-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  currentPage=1;renderTable();
+}
+function setPriorityFilter(val){priorFilter=priorFilter===val?'all':val;currentPage=1;renderTable();}
+
+function getFiltered(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  return incidents.filter(i=>{
+    const mPipe=pipeFilter==='all'||i.status===pipeFilter;
+    const mPrior=priorFilter==='all'||i.priority===priorFilter;
+    const mQ=!q||i.title.toLowerCase().includes(q)||i.source.toLowerCase().includes(q);
+    return mPipe&&mPrior&&mQ;
+  });
+}
+
+function sevBadge(p){
+  const cls={low:'sev-low',medium:'sev-medium',high:'sev-high',critical:'sev-critical'};
+  const ic={low:'fa-arrow-down',medium:'fa-minus',high:'fa-arrow-up',critical:'fa-skull-crossbones'};
+  return `<span class="sev ${cls[p]||'sev-low'}"><i class="fas ${ic[p]||'fa-minus'}"></i>${(p||'low').toUpperCase()}</span>`;
+}
+function statusPill(s,id){
+  const cls={open:'s-open','in-progress':'s-in-progress',assigned:'s-assigned',resolved:'s-resolved'};
+  const lbl={open:'OPEN','in-progress':'IN PROGRESS',assigned:'ASSIGNED',resolved:'RESOLVED'};
+  const ic={open:'fa-circle','in-progress':'fa-spinner',assigned:'fa-user-check',resolved:'fa-check-double'};
+  return `<span class="status-pill ${cls[s]||'s-open'}" onclick="advanceStatus(${id})" title="Click to advance"><i class="fas ${ic[s]||'fa-circle'}" style="font-size:8px"></i> ${lbl[s]||'OPEN'}</span>`;
+}
+
+async function advanceStatus(id){
+  const inc=incidents.find(i=>i.id===id);if(!inc)return;
+  const idx=STATUS_ORDER.indexOf(inc.status);
+  if(idx<STATUS_ORDER.length-1){
+    const next=STATUS_ORDER[idx+1];
+    if(next==='resolved'){
+      const res=await Alerts.resolve(id);
+      if(res&&res.status===200){
+        inc.status='resolved';
+        showToast(`Incident #${String(id).padStart(3,'0')} resolved`);
+        renderTable();
+      } else { showToast(res?.data?.error||'Failed to resolve','red'); }
+    } else {
+      inc.status=next;
+      showToast(`Incident #${String(id).padStart(3,'0')} → ${next.toUpperCase()}`);
+      renderTable();
+    }
+  }
+}
+
+function quickAssign(id){
+  const teams=['Team Alpha','Team Beta','Team Sigma','Operator A','Operator B'];
+  const inc=incidents.find(i=>i.id===id);if(!inc)return;
+  inc.assignee=teams[Math.floor(Math.random()*teams.length)];
+  inc.status='assigned';
+  showToast(`Incident #${String(id).padStart(3,'0')} assigned to ${inc.assignee}`);
+  renderTable();
+}
+
+function renderTable(){
+  const filtered=getFiltered();
+  const pageData=filtered.slice((currentPage-1)*PAGE_SIZE,currentPage*PAGE_SIZE);
+  const tbody=document.getElementById('incBody');
+  const empty=document.getElementById('emptyState');
+  document.getElementById('tableCount').textContent=`Showing ${pageData.length} of ${filtered.length} incidents`;
+  if(!pageData.length){tbody.innerHTML='';empty.style.display='block';renderPagination(0);return;}
+  empty.style.display='none';
+  tbody.innerHTML=pageData.map(i=>`
+    <tr>
+      <td class="td-mono" style="color:var(--text-muted)">#${String(i.id).padStart(3,'0')}</td>
+      <td>${sevBadge(i.priority)}</td>
+      <td class="td-primary" style="max-width:260px">${i.title}</td>
+      <td class="td-mono" style="color:var(--text-muted)">${i.source}</td>
+      <td>${statusPill(i.status,i.id)}</td>
+      <td><span class="assignee-chip"><i class="fas fa-user" style="font-size:9px"></i>${i.assignee}</span></td>
+      <td class="td-mono" style="color:var(--text-muted)">${i.created}</td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">
+        ${i.status!=='resolved'?`<button class="advance-btn" onclick="advanceStatus(${i.id})"><i class="fas fa-arrow-right"></i> ADVANCE</button>`:''}
+        ${i.assignee==='Unassigned'?`<button class="assign-btn" onclick="quickAssign(${i.id})"><i class="fas fa-user-plus"></i> ASSIGN</button>`:''}
+      </td>
+    </tr>
+  `).join('');
+
+  document.getElementById('pipe-open').textContent=incidents.filter(i=>i.status==='open').length;
+  document.getElementById('pipe-inprogress').textContent=incidents.filter(i=>i.status==='in-progress').length;
+  document.getElementById('pipe-assigned').textContent=incidents.filter(i=>i.status==='assigned').length;
+  document.getElementById('pipe-resolved').textContent=incidents.filter(i=>i.status==='resolved').length;
+  ['critical','high','medium','low'].forEach(p=>{
+    document.getElementById('m-'+p).textContent=incidents.filter(i=>i.priority===p).length;
+  });
+  renderPagination(filtered.length);
+}
+
+function renderPagination(total){
+  const pages=Math.ceil(total/PAGE_SIZE);
+  const area=document.getElementById('paginationArea');
+  if(pages<=1){area.innerHTML='';return;}
+  let html=`<span class="pg-info">Page ${currentPage} of ${pages}</span>`;
+  html+=`<button class="pg-btn" onclick="changePage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹ Prev</button>`;
+  for(let i=1;i<=pages;i++) html+=`<button class="pg-btn ${i===currentPage?'active':''}" onclick="changePage(${i})">${i}</button>`;
+  html+=`<button class="pg-btn" onclick="changePage(${currentPage+1})" ${currentPage===pages?'disabled':''}>Next ›</button>`;
+  area.innerHTML=html;
+}
+function changePage(p){const pages=Math.ceil(getFiltered().length/PAGE_SIZE);if(p<1||p>pages)return;currentPage=p;renderTable();}
+
+function openModal(){document.getElementById('createModal').classList.add('open')}
+function closeModal(){document.getElementById('createModal').classList.remove('open')}
+async function createIncident(){
+  const title=document.getElementById('f-title').value.trim();
+  if(!title){showToast('Title is required','red');return;}
+  const res=await Alerts.add({
+    title,
+    severity:document.getElementById('f-priority').value,
+    category:'incident',
+    source:document.getElementById('f-source').value||'manual-entry',
+    description:document.getElementById('f-desc').value
+  });
+  if(res&&res.status===201){
+    closeModal();
+    document.getElementById('f-title').value='';
+    document.getElementById('f-source').value='';
+    await loadIncidents();
+    showToast('Incident created');
+  } else { showToast(res?.data?.error||'Failed to create','red'); }
+}
+
+function showToast(msg,type='green'){
+  const t=document.getElementById('toast');
+  t.style.borderColor=type==='green'?'var(--green-accent)':'var(--red-accent)';
+  t.style.color=type==='green'?'var(--green-accent)':'var(--red-accent)';
+  document.getElementById('toastMsg').textContent=msg;
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+function exportIncidents(){
+  const rows=incidents.map(i=>[i.id,i.priority,`"${i.title}"`,i.source,i.status,i.assignee,i.created].join(','));
+  const csv=['ID,Priority,Title,Source,Status,Assignee,Created',...rows].join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`ssod_incidents_${Date.now()}.csv`;a.click();
+  URL.revokeObjectURL(url);
+}
+
+loadIncidents();
+setInterval(loadIncidents,30000);
+</script>
+</body>
+</html>

@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>SSOD | User Management</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    /* =====================================================
+       SSOD — USERS.HTML  [ADMIN ONLY]
+       Author: SYLVAH™ | SYL-USR-001 | v1.0.0 | 2026
+       Requires: requireAdmin() — admin role only
+    ===================================================== */
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --bg-deep:#0a0f1c;--card-bg:#12172b;--card-elevated:#171e34;
+      --border-glow:#2a3a60;--border-subtle:#1f2a40;
+      --text-primary:#eef2ff;--text-secondary:#8e9bb5;--text-muted:#5b6b8c;
+      --cyan-accent:#00e0ff;--green-accent:#1effbc;--orange-accent:#ff9f4a;
+      --red-accent:#ff4d6d;--purple-accent:#b77cff;--gold-accent:#ffd966;
+      --font-display:'Inter',sans-serif;--font-mono:'JetBrains Mono',monospace;
+    }
+    html,body{height:100%;overflow:hidden;background:var(--bg-deep);font-family:var(--font-display);color:var(--text-primary)}
+    body::before{content:"";position:fixed;inset:0;background-image:linear-gradient(rgba(0,224,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,224,255,.02) 1px,transparent 1px);background-size:32px 32px;pointer-events:none;z-index:0}
+    .scan-line{position:fixed;top:0;left:0;width:100%;height:3px;background:linear-gradient(90deg,transparent,var(--cyan-accent),transparent);opacity:.28;pointer-events:none;z-index:999;animation:scanMove 10s linear infinite}
+    @keyframes scanMove{0%{top:0}100%{top:100%}}
+
+    /* TOPBAR */
+    .topbar{position:fixed;top:0;left:0;right:0;height:64px;background:rgba(14,19,34,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--border-glow);display:flex;align-items:center;justify-content:space-between;padding:0 28px;z-index:100}
+    .logo-area{display:flex;align-items:baseline;gap:12px}
+    .logo{font-family:var(--font-mono);font-size:26px;font-weight:700;letter-spacing:3px;background:linear-gradient(135deg,var(--cyan-accent),#6c8cff);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 6px rgba(0,224,255,.3);text-decoration:none}
+    .badge-sys{font-size:10px;font-family:var(--font-mono);background:rgba(0,224,255,.1);border:1px solid var(--cyan-accent);padding:2px 8px;border-radius:20px;color:var(--cyan-accent);letter-spacing:1px}
+    .system-status{display:flex;align-items:center;gap:10px;background:rgba(30,40,60,.5);padding:6px 18px;border-radius:40px;border-left:2px solid var(--green-accent)}
+    .status-led{width:8px;height:8px;background:var(--green-accent);border-radius:50%;box-shadow:0 0 8px var(--green-accent);animation:pulseG 1.8s infinite}
+    @keyframes pulseG{0%,100%{opacity:1}50%{opacity:.35}}
+    .time-stamp{font-family:var(--font-mono);font-size:13px;color:var(--text-secondary)}
+    .admin-profile{display:flex;align-items:center;gap:20px}
+    .admin-name{font-size:13px;font-weight:500;letter-spacing:.5px}
+    .logout-btn{background:transparent;border:1px solid var(--border-glow);color:var(--text-secondary);padding:6px 14px;border-radius:6px;font-size:12px;font-family:var(--font-mono);cursor:pointer;transition:.2s;text-decoration:none}
+    .logout-btn:hover{border-color:var(--red-accent);color:var(--red-accent)}
+
+    /* SIDEBAR */
+    .sidebar{position:fixed;top:64px;left:0;width:260px;height:calc(100vh - 64px);background:rgba(14,19,34,.97);border-right:1px solid var(--border-subtle);padding:28px 0;overflow-y:auto;z-index:90}
+    .nav-section{margin-bottom:28px}
+    .nav-caption{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);padding:0 24px;margin-bottom:12px}
+    .nav-item{display:flex;align-items:center;gap:14px;padding:12px 24px;color:var(--text-secondary);font-size:14px;font-weight:500;cursor:pointer;border-left:3px solid transparent;transition:all .2s;text-decoration:none}
+    .nav-item i{width:22px;font-size:1rem;color:var(--cyan-accent)}
+    .nav-item:hover,.nav-item.active{background:rgba(0,224,255,.08);color:var(--cyan-accent);border-left-color:var(--cyan-accent)}
+    .alert-badge{margin-left:auto;background:var(--red-accent);color:#fff;font-size:10px;padding:2px 7px;border-radius:30px;font-weight:bold}
+
+    /* MAIN */
+    .main{margin-left:260px;margin-top:64px;height:calc(100vh - 64px);overflow-y:auto;padding:24px 28px;position:relative;z-index:2}
+    .main::-webkit-scrollbar{width:5px}
+    .main::-webkit-scrollbar-thumb{background:var(--border-glow);border-radius:10px}
+
+    /* ADMIN GATE BANNER */
+    .admin-gate{background:rgba(183,124,255,.06);border:1px solid rgba(183,124,255,.35);border-radius:12px;padding:12px 18px;display:flex;align-items:center;gap:12px;margin-bottom:20px;font-size:12px;font-family:var(--font-mono)}
+    .admin-gate i{color:var(--purple-accent);font-size:16px}
+    .admin-gate strong{color:var(--purple-accent)}
+
+    /* PAGE HEADER */
+    .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+    .page-title-group{display:flex;align-items:center;gap:14px}
+    .page-icon{width:44px;height:44px;background:rgba(0,224,255,.08);border:1px solid var(--cyan-accent);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--cyan-accent);font-size:18px;box-shadow:0 0 14px rgba(0,224,255,.15)}
+    .page-title{font-family:var(--font-mono);font-size:20px;font-weight:700;letter-spacing:2px}
+    .page-subtitle{font-size:12px;color:var(--text-muted);margin-top:2px}
+    .header-controls{display:flex;align-items:center;gap:10px}
+
+    /* BUTTONS */
+    .btn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:8px;font-size:12px;font-family:var(--font-mono);cursor:pointer;transition:.2s;border:1px solid}
+    .btn-ghost{background:var(--card-bg);border-color:var(--border-subtle);color:var(--text-secondary)}
+    .btn-ghost:hover{border-color:var(--cyan-accent);color:var(--cyan-accent)}
+    .btn-cyan{background:rgba(0,224,255,.1);border-color:var(--cyan-accent);color:var(--cyan-accent)}
+    .btn-cyan:hover{background:rgba(0,224,255,.2)}
+    .btn-red{background:rgba(255,77,109,.1);border-color:var(--red-accent);color:var(--red-accent)}
+    .btn-red:hover{background:rgba(255,77,109,.2)}
+
+    /* STAT STRIP */
+    .stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+    .stat-card{background:var(--card-bg);border:1px solid var(--border-subtle);border-radius:16px;padding:18px 20px;position:relative;overflow:hidden}
+    .stat-card::before{content:"";position:absolute;top:0;left:0;width:100%;height:2px}
+    .stat-card.total::before   {background:linear-gradient(90deg,var(--cyan-accent),transparent)}
+    .stat-card.active::before  {background:linear-gradient(90deg,var(--green-accent),transparent)}
+    .stat-card.inactive::before{background:linear-gradient(90deg,var(--red-accent),transparent)}
+    .stat-card.roles::before   {background:linear-gradient(90deg,var(--purple-accent),transparent)}
+    .stat-label{font-size:10px;font-family:var(--font-mono);letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+    .stat-value{font-family:var(--font-mono);font-size:32px;font-weight:700}
+    .stat-card.total   .stat-value{color:var(--cyan-accent)}
+    .stat-card.active  .stat-value{color:var(--green-accent)}
+    .stat-card.inactive .stat-value{color:var(--red-accent)}
+    .stat-card.roles   .stat-value{color:var(--purple-accent)}
+    .stat-sub{font-size:10px;color:var(--text-muted);margin-top:4px;font-family:var(--font-mono)}
+
+    /* TOOLBAR */
+    .toolbar{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+    .search-box{flex:1;min-width:200px;max-width:320px;position:relative}
+    .search-box input{width:100%;background:var(--card-bg);border:1px solid var(--border-subtle);border-radius:8px;padding:8px 12px 8px 36px;font-size:12px;font-family:var(--font-mono);color:var(--text-primary);outline:none;transition:.2s}
+    .search-box input:focus{border-color:var(--cyan-accent)}
+    .search-box input::placeholder{color:var(--text-muted)}
+    .search-box i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:12px}
+    .filter-btn{padding:6px 12px;border-radius:6px;font-size:11px;font-family:var(--font-mono);cursor:pointer;border:1px solid var(--border-subtle);background:var(--card-bg);color:var(--text-muted);transition:.2s}
+    .filter-btn:hover,.filter-btn.active{border-color:var(--cyan-accent);color:var(--cyan-accent);background:rgba(0,224,255,.06)}
+    .filter-label{font-size:11px;font-family:var(--font-mono);color:var(--text-muted);letter-spacing:1px}
+
+    /* TABLE */
+    .table-card{background:var(--card-bg);border:1px solid var(--border-subtle);border-radius:18px;overflow:hidden}
+    .table-card-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border-subtle)}
+    .table-card-title{font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-secondary);display:flex;align-items:center;gap:8px}
+    .table-card-title i{color:var(--cyan-accent)}
+    .tbl{width:100%;border-collapse:collapse}
+    .tbl thead th{padding:11px 16px;text-align:left;font-family:var(--font-mono);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-muted);font-weight:500;border-bottom:1px solid var(--border-subtle);white-space:nowrap}
+    .tbl tbody tr{border-bottom:1px solid rgba(31,42,64,.5);transition:background .15s}
+    .tbl tbody tr:hover{background:rgba(0,224,255,.03)}
+    .tbl tbody td{padding:13px 16px;color:var(--text-secondary);font-size:12px;vertical-align:middle}
+    .td-mono{font-family:var(--font-mono);font-size:11px}
+
+    /* USER AVATAR */
+    .user-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:13px;font-weight:700;border:2px solid;flex-shrink:0}
+    .av-admin   {background:rgba(0,224,255,.12);border-color:var(--cyan-accent);color:var(--cyan-accent)}
+    .av-operator{background:rgba(255,159,74,.12);border-color:var(--orange-accent);color:var(--orange-accent)}
+    .av-viewer  {background:rgba(183,124,255,.12);border-color:var(--purple-accent);color:var(--purple-accent)}
+    .user-cell{display:flex;align-items:center;gap:10px}
+    .user-info-name{font-weight:500;color:var(--text-primary);font-size:13px}
+    .user-info-email{font-size:10px;font-family:var(--font-mono);color:var(--text-muted);margin-top:1px}
+
+    /* ROLE BADGE */
+    .role-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:10px;font-family:var(--font-mono);font-weight:600;border:1px solid;white-space:nowrap}
+    .r-admin   {color:var(--cyan-accent);border-color:rgba(0,224,255,.4);background:rgba(0,224,255,.07)}
+    .r-operator{color:var(--orange-accent);border-color:rgba(255,159,74,.4);background:rgba(255,159,74,.07)}
+    .r-viewer  {color:var(--purple-accent);border-color:rgba(183,124,255,.4);background:rgba(183,124,255,.07)}
+
+    /* STATUS */
+    .status-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:10px;font-family:var(--font-mono);font-weight:600;border:1px solid}
+    .s-active  {color:var(--green-accent);border-color:rgba(30,255,188,.4);background:rgba(30,255,188,.07)}
+    .s-inactive{color:var(--red-accent);border-color:rgba(255,77,109,.4);background:rgba(255,77,109,.07)}
+
+    /* MFA BADGE */
+    .mfa-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:9px;font-family:var(--font-mono);font-weight:600}
+    .mfa-on {background:rgba(30,255,188,.08);color:var(--green-accent);border:1px solid rgba(30,255,188,.3)}
+    .mfa-off{background:rgba(255,255,255,.04);color:var(--text-muted);border:1px solid var(--border-subtle)}
+
+    /* ACTION BUTTONS */
+    .row-actions{display:flex;gap:6px;flex-wrap:wrap}
+    .act-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:6px;font-size:10px;font-family:var(--font-mono);cursor:pointer;border:1px solid;transition:.2s;white-space:nowrap}
+    .act-edit    {color:var(--cyan-accent);border-color:rgba(0,224,255,.3);background:rgba(0,224,255,.06)}
+    .act-edit:hover{background:rgba(0,224,255,.15)}
+    .act-toggle-on {color:var(--red-accent);border-color:rgba(255,77,109,.3);background:rgba(255,77,109,.06)}
+    .act-toggle-on:hover{background:rgba(255,77,109,.15)}
+    .act-toggle-off{color:var(--green-accent);border-color:rgba(30,255,188,.3);background:rgba(30,255,188,.06)}
+    .act-toggle-off:hover{background:rgba(30,255,188,.15)}
+
+    /* MODAL */
+    .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:500;align-items:center;justify-content:center}
+    .modal-backdrop.open{display:flex}
+    .modal{background:#12172b;border:1px solid var(--border-glow);border-radius:20px;padding:28px;width:520px;max-width:95vw}
+    .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+    .modal-title{font-family:var(--font-mono);font-size:14px;font-weight:700;letter-spacing:1.5px;color:var(--text-primary)}
+    .modal-close{background:transparent;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;transition:.2s}
+    .modal-close:hover{color:var(--red-accent)}
+    .form-group{margin-bottom:14px}
+    .form-label{display:block;font-size:10px;font-family:var(--font-mono);letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:7px}
+    .form-control{width:100%;background:#0e1322;border:1px solid var(--border-subtle);border-radius:8px;padding:9px 12px;font-size:12px;font-family:var(--font-mono);color:var(--text-primary);outline:none;transition:.2s}
+    .form-control:focus{border-color:var(--cyan-accent)}
+    .form-control::placeholder{color:var(--text-muted)}
+    select.form-control option{background:#12172b}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+
+    /* ROLE EDIT MODAL */
+    .role-option{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;border:1px solid var(--border-subtle);cursor:pointer;transition:.2s;margin-bottom:8px}
+    .role-option:hover{border-color:var(--cyan-accent)}
+    .role-option.selected{border-color:var(--cyan-accent);background:rgba(0,224,255,.06)}
+    .role-option-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+    .role-option-label{font-family:var(--font-mono);font-size:12px;font-weight:600}
+    .role-option-desc{font-size:11px;color:var(--text-muted)}
+
+    /* CONFIRM MODAL */
+    .confirm-modal .modal{max-width:380px;text-align:center}
+    .confirm-icon{font-size:40px;margin-bottom:16px}
+    .confirm-title{font-family:var(--font-mono);font-size:15px;font-weight:700;margin-bottom:8px}
+    .confirm-msg{font-size:12px;color:var(--text-muted);line-height:1.6;margin-bottom:20px}
+
+    /* TOAST */
+    .toast{position:fixed;bottom:28px;right:28px;background:#12172b;border:1px solid var(--green-accent);border-radius:12px;padding:14px 20px;font-family:var(--font-mono);font-size:12px;color:var(--green-accent);z-index:700;display:none;align-items:center;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+    .toast.show{display:flex;animation:slideUp .3s ease}
+    @keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+    .pagination{display:flex;align-items:center;gap:8px;padding:14px 20px;border-top:1px solid var(--border-subtle);justify-content:flex-end}
+    .pg-btn{background:var(--card-bg);border:1px solid var(--border-subtle);color:var(--text-muted);padding:5px 10px;border-radius:6px;font-family:var(--font-mono);font-size:11px;cursor:pointer;transition:.2s}
+    .pg-btn:hover,.pg-btn.active{border-color:var(--cyan-accent);color:var(--cyan-accent)}
+    .pg-info{font-family:var(--font-mono);font-size:11px;color:var(--text-muted)}
+    .empty-state{padding:48px;text-align:center;color:var(--text-muted);font-family:var(--font-mono);font-size:12px}
+    .empty-state i{font-size:32px;margin-bottom:12px;display:block;opacity:.4}
+    .last-login{font-family:var(--font-mono);font-size:10px;color:var(--text-muted)}
+  </style>
+</head>
+<body>
+
+<script>
+  const PROJECT_SIGNATURE={id:"SSOD-SYL-2026-U5ER",author:"SYLVAH™",created:"2026-04-21",version:"1.0.0",module:"users.html",hash:"u53r_m4n4g3m3nt_4dm1n"};
+  window.__ssod_auth__=PROJECT_SIGNATURE;
+  const _meta={catalogId:"SYL-USR-001",type:"user_management",access:"admin_only",project:"SSOD"};
+</script>
+
+<div class="scan-line"></div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo-area">
+    <a href="dashboard.html" class="logo">SSOD</a>
+    <div class="badge-sys">SMART SECURE OPS</div>
+  </div>
+  <div class="system-status">
+    <div class="status-led"></div>
+    <span style="font-size:12px;font-weight:500;letter-spacing:.5px">SYSTEM ONLINE</span>
+    <div class="time-stamp" id="liveTime"></div>
+  </div>
+  <div class="admin-profile">
+    <div class="admin-name"><i class="fas fa-user-shield" style="margin-right:6px;color:var(--cyan-accent)"></i>Admin · SYLVAH</div>
+    <a href="login.html" class="logout-btn"><i class="fas fa-sign-out-alt"></i> LOGOUT</a>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="nav-section">
+    <div class="nav-caption"><i class="fas fa-cube" style="margin-right:6px"></i>OPERATIONAL SUITE</div>
+    <a href="dashboard.html"   class="nav-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+    <a href="performance.html" class="nav-item"><i class="fas fa-chart-line"></i> Performance</a>
+    <a href="alerts.html"      class="nav-item"><i class="fas fa-bell"></i> Alerts <span class="alert-badge">3</span></a>
+    <a href="logs.html"        class="nav-item"><i class="fas fa-history"></i> Activity Logs</a>
+    <a href="incidents.html"   class="nav-item"><i class="fas fa-fire"></i> Incidents</a>
+    <a href="dashboard.html"   class="nav-item"><i class="fas fa-database"></i> Live Data Stream</a>
+  </div>
+  <div class="nav-section">
+    <div class="nav-caption"><i class="fas fa-lock" style="margin-right:6px"></i>ACCESS CONTROL</div>
+    <a href="users.html" class="nav-item active"><i class="fas fa-users"></i> User Management</a>
+    <a href="#"          class="nav-item"><i class="fas fa-user-tag"></i> Role Manager</a>
+    <a href="#"          class="nav-item"><i class="fas fa-shield-alt"></i> Security Center</a>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- ADMIN GATE BANNER -->
+  <div class="admin-gate">
+    <i class="fas fa-lock"></i>
+    <span><strong>ADMIN-ONLY ZONE</strong> — This page is restricted to administrator accounts. All actions are logged to the audit trail. Endpoint: <code style="color:var(--cyan-accent)">GET /api/users/</code></span>
+  </div>
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <div class="page-icon"><i class="fas fa-users-cog"></i></div>
+      <div>
+        <div class="page-title">USER MANAGEMENT</div>
+        <div class="page-subtitle">Admin console · Manage roles, activation, and access · Source: /api/users/</div>
+      </div>
+    </div>
+    <div class="header-controls">
+      <button class="btn btn-ghost" onclick="exportUsers()"><i class="fas fa-download"></i> EXPORT CSV</button>
+      <button class="btn btn-cyan" onclick="openCreateModal()"><i class="fas fa-user-plus"></i> ADD USER</button>
+    </div>
+  </div>
+
+  <!-- STAT STRIP -->
+  <div class="stat-strip">
+    <div class="stat-card total">
+      <div class="stat-label"><i class="fas fa-users"></i> TOTAL USERS</div>
+      <div class="stat-value" id="cnt-total">0</div>
+      <div class="stat-sub">All accounts</div>
+    </div>
+    <div class="stat-card active">
+      <div class="stat-label"><i class="fas fa-user-check"></i> ACTIVE</div>
+      <div class="stat-value" id="cnt-active">0</div>
+      <div class="stat-sub">Enabled accounts</div>
+    </div>
+    <div class="stat-card inactive">
+      <div class="stat-label"><i class="fas fa-user-slash"></i> INACTIVE</div>
+      <div class="stat-value" id="cnt-inactive">0</div>
+      <div class="stat-sub">Disabled accounts</div>
+    </div>
+    <div class="stat-card roles">
+      <div class="stat-label"><i class="fas fa-tags"></i> ROLES DEFINED</div>
+      <div class="stat-value" id="cnt-roles">3</div>
+      <div class="stat-sub">admin · operator · viewer</div>
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="search-box">
+      <i class="fas fa-search"></i>
+      <input type="text" id="searchInput" placeholder="Search by username, email, role..." oninput="renderTable()">
+    </div>
+    <span class="filter-label">ROLE:</span>
+    <button class="filter-btn active" onclick="setRoleFilter('all',this)">ALL</button>
+    <button class="filter-btn" onclick="setRoleFilter('admin',this)">ADMIN</button>
+    <button class="filter-btn" onclick="setRoleFilter('operator',this)">OPERATOR</button>
+    <button class="filter-btn" onclick="setRoleFilter('viewer',this)">VIEWER</button>
+    <span class="filter-label" style="margin-left:4px">STATUS:</span>
+    <button class="filter-btn active" onclick="setStatusFilter('all',this)">ALL</button>
+    <button class="filter-btn" onclick="setStatusFilter('active',this)">ACTIVE</button>
+    <button class="filter-btn" onclick="setStatusFilter('inactive',this)">INACTIVE</button>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-card">
+    <div class="table-card-header">
+      <div class="table-card-title"><i class="fas fa-users"></i> USER ACCOUNTS</div>
+      <span id="tableCount" style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)"></span>
+    </div>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>USER</th>
+          <th>ROLE</th>
+          <th>STATUS</th>
+          <th>MFA</th>
+          <th>CREATED</th>
+          <th>LAST LOGIN</th>
+          <th>ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody id="usersBody"></tbody>
+    </table>
+    <div id="emptyState" class="empty-state" style="display:none">
+      <i class="fas fa-user-slash"></i>No users match your current filters.
+    </div>
+    <div class="pagination" id="paginationArea"></div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- CREATE USER MODAL -->
+<div class="modal-backdrop" id="createModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title"><i class="fas fa-user-plus" style="margin-right:8px;color:var(--cyan-accent)"></i>ADD NEW USER</div>
+      <button class="modal-close" onclick="document.getElementById('createModal').classList.remove('open')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">First Name</label>
+        <input class="form-control" id="f-firstname" placeholder="First name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Last Name</label>
+        <input class="form-control" id="f-lastname" placeholder="Last name">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input class="form-control" id="f-username" placeholder="e.g. operator_03">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-control" id="f-email" placeholder="user@ssod.io" type="email">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Role</label>
+        <select class="form-control" id="f-role">
+          <option value="viewer">Viewer</option>
+          <option value="operator">Operator</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Initial Password</label>
+        <input class="form-control" id="f-password" type="password" placeholder="Min 8 characters">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="f-mfa" style="accent-color:var(--cyan-accent)"> Force MFA enrollment on first login
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="document.getElementById('createModal').classList.remove('open')">CANCEL</button>
+      <button class="btn btn-cyan" onclick="createUser()"><i class="fas fa-save"></i> CREATE USER</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT ROLE MODAL -->
+<div class="modal-backdrop" id="editRoleModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title"><i class="fas fa-user-tag" style="margin-right:8px;color:var(--purple-accent)"></i>CHANGE ROLE</div>
+      <button class="modal-close" onclick="document.getElementById('editRoleModal').classList.remove('open')"><i class="fas fa-times"></i></button>
+    </div>
+    <div id="editRoleUsername" style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);margin-bottom:18px"></div>
+    <div id="roleOptions"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="document.getElementById('editRoleModal').classList.remove('open')">CANCEL</button>
+      <button class="btn btn-cyan" onclick="saveRole()"><i class="fas fa-check"></i> SAVE ROLE</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-backdrop confirm-modal" id="confirmModal">
+  <div class="modal" style="max-width:380px;text-align:center">
+    <div class="confirm-icon" id="confirmIcon">⚠️</div>
+    <div class="confirm-title" id="confirmTitle">Confirm Action</div>
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div style="display:flex;justify-content:center;gap:12px">
+      <button class="btn btn-ghost" onclick="document.getElementById('confirmModal').classList.remove('open')">CANCEL</button>
+      <button class="btn btn-red" id="confirmBtn" onclick="confirmAction()">CONFIRM</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toastMsg"></span></div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+requireAuth();
+requireAdmin();
+
+function updateClock(){
+  const n=new Date();let h=n.getHours(),m=n.getMinutes();
+  const ap=h>=12?'PM':'AM';h=h%12||12;
+  const p=x=>String(x).padStart(2,'0');
+  document.getElementById('liveTime').textContent=`${p(h)}:${p(m)} ${ap} · ${n.getMonth()+1}/${n.getDate()}/${n.getFullYear()}`;
+}
+updateClock();setInterval(updateClock,1000);
+
+let users=[];
+let roleFilter='all', statusFilter='all', currentPage=1;
+const PAGE_SIZE=8;
+let editingUserId=null, editingRole=null, pendingToggleId=null;
+
+async function loadUsers(){
+  const res=await Users.getAll();
+  if(!res||res.status!==200){
+    showToast('Failed to load users — admin access required','red'); return;
+  }
+  users=res.data;
+  renderTable();
+}
+
+function setRoleFilter(val,btn){
+  roleFilter=val;renderTable();
+}
+function setStatusFilter(val,btn){
+  statusFilter=val;renderTable();
+}
+
+function getFiltered(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  return users.filter(u=>{
+    const mRole=roleFilter==='all'||u.role===roleFilter;
+    const mStatus=statusFilter==='all'||(statusFilter==='active'&&u.is_active)||(statusFilter==='inactive'&&!u.is_active);
+    const mQ=!q||u.username.toLowerCase().includes(q)||u.email.toLowerCase().includes(q)||u.role.toLowerCase().includes(q);
+    return mRole&&mStatus&&mQ;
+  });
+}
+
+function roleBadge(r){
+  const cls={admin:'r-admin',operator:'r-operator',viewer:'r-viewer'};
+  const ic={admin:'fa-user-shield',operator:'fa-user-cog',viewer:'fa-eye'};
+  return `<span class="role-badge ${cls[r]||'r-viewer'}"><i class="fas ${ic[r]||'fa-eye'}"></i>${r.toUpperCase()}</span>`;
+}
+function avatarClass(r){return {admin:'av-admin',operator:'av-operator',viewer:'av-viewer'}[r]||'av-viewer';}
+function initials(u){return ((u.username||'?')[0]).toUpperCase();}
+
+function renderTable(){
+  const filtered=getFiltered();
+  const pageData=filtered.slice((currentPage-1)*PAGE_SIZE,currentPage*PAGE_SIZE);
+  const tbody=document.getElementById('usersBody');
+  const empty=document.getElementById('emptyState');
+  document.getElementById('tableCount').textContent=`Showing ${pageData.length} of ${filtered.length} users`;
+  if(!pageData.length){tbody.innerHTML='';empty.style.display='block';renderPagination(0);return;}
+  empty.style.display='none';
+  tbody.innerHTML=pageData.map(u=>`
+    <tr id="row-${u.id}">
+      <td>
+        <div class="user-cell">
+          <div class="user-avatar ${avatarClass(u.role)}">${initials(u)}</div>
+          <div>
+            <div class="user-info-name">${u.username}</div>
+            <div class="user-info-email">${u.email}</div>
+          </div>
+        </div>
+      </td>
+      <td>${roleBadge(u.role)}</td>
+      <td><span class="status-pill ${u.is_active?'s-active':'s-inactive'}">
+        <i class="fas ${u.is_active?'fa-check-circle':'fa-times-circle'}" style="font-size:8px"></i>
+        ${u.is_active?'ACTIVE':'INACTIVE'}
+      </span></td>
+      <td><span class="mfa-pill mfa-off"><i class="fas fa-shield"></i> N/A</span></td>
+      <td class="td-mono" style="color:var(--text-muted)">${u.created_at||'—'}</td>
+      <td><span class="last-login">${u.last_login||'Never'}</span></td>
+      <td>
+        <div class="row-actions">
+          <button class="act-btn act-edit" onclick="openEditRole(${u.id})"><i class="fas fa-user-tag"></i> ROLE</button>
+          <button class="act-btn ${u.is_active?'act-toggle-on':'act-toggle-off'}" onclick="confirmToggle(${u.id})">
+            <i class="fas ${u.is_active?'fa-user-slash':'fa-user-check'}"></i>
+            ${u.is_active?'DEACTIVATE':'ACTIVATE'}
+          </button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+  document.getElementById('cnt-total').textContent=users.length;
+  document.getElementById('cnt-active').textContent=users.filter(u=>u.is_active).length;
+  document.getElementById('cnt-inactive').textContent=users.filter(u=>!u.is_active).length;
+  renderPagination(filtered.length);
+}
+
+function renderPagination(total){
+  const pages=Math.ceil(total/PAGE_SIZE);
+  const area=document.getElementById('paginationArea');
+  if(pages<=1){area.innerHTML='';return;}
+  let html=`<span class="pg-info">Page ${currentPage} of ${pages}</span>`;
+  html+=`<button class="pg-btn" onclick="changePage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹ Prev</button>`;
+  for(let i=1;i<=pages;i++) html+=`<button class="pg-btn ${i===currentPage?'active':''}" onclick="changePage(${i})">${i}</button>`;
+  html+=`<button class="pg-btn" onclick="changePage(${currentPage+1})" ${currentPage===pages?'disabled':''}>Next ›</button>`;
+  area.innerHTML=html;
+}
+function changePage(p){const pages=Math.ceil(getFiltered().length/PAGE_SIZE);if(p<1||p>pages)return;currentPage=p;renderTable();}
+
+/* ── Create user via real API ── */
+function openCreateModal(){document.getElementById('createModal').classList.add('open')}
+async function createUser(){
+  const username=document.getElementById('f-username').value.trim();
+  const email=document.getElementById('f-email').value.trim();
+  const password=document.getElementById('f-password').value;
+  if(!username||!email){showToast('Username and email are required','red');return;}
+  if(password.length<8){showToast('Password must be at least 8 characters','red');return;}
+  const res=await Users.create({
+    username,email,password,
+    role:document.getElementById('f-role').value
+  });
+  if(res&&res.status===201){
+    document.getElementById('createModal').classList.remove('open');
+    ['f-username','f-email','f-password'].forEach(id=>document.getElementById(id).value='');
+    await loadUsers();
+    showToast(`User ${username} created`);
+  } else { showToast(res?.data?.error||'Failed to create user','red'); }
+}
+
+/* ── Edit role via real API ── */
+function openEditRole(id){
+  const u=users.find(x=>x.id===id);if(!u)return;
+  editingUserId=id;editingRole=u.role;
+  document.getElementById('editRoleUsername').textContent=`Editing: ${u.username} (${u.email})`;
+  const ROLES=[
+    {val:'admin',label:'Administrator',desc:'Full access — manage users, security, all data.',ic:'fa-user-shield',cls:'av-admin'},
+    {val:'operator',label:'Operator',desc:'Manage alerts, incidents, logs. Cannot manage users.',ic:'fa-user-cog',cls:'av-operator'},
+    {val:'viewer',label:'Viewer',desc:'Read-only access to dashboard and monitoring.',ic:'fa-eye',cls:'av-viewer'},
+  ];
+  document.getElementById('roleOptions').innerHTML=ROLES.map(r=>`
+    <div class="role-option ${u.role===r.val?'selected':''}" onclick="selectRole('${r.val}',this)">
+      <div class="user-avatar ${r.cls}" style="width:40px;height:40px"><i class="fas ${r.ic}"></i></div>
+      <div>
+        <div class="role-option-label" style="color:${u.role===r.val?'var(--cyan-accent)':'var(--text-primary)'}">${r.label}</div>
+        <div class="role-option-desc">${r.desc}</div>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('editRoleModal').classList.add('open');
+}
+function selectRole(val,el){
+  editingRole=val;
+  document.querySelectorAll('.role-option').forEach(o=>{o.classList.remove('selected');o.querySelector('.role-option-label').style.color='var(--text-primary)'});
+  el.classList.add('selected');el.querySelector('.role-option-label').style.color='var(--cyan-accent)';
+}
+async function saveRole(){
+  const res=await Users.updateRole(editingUserId,editingRole);
+  if(res&&res.status===200){
+    document.getElementById('editRoleModal').classList.remove('open');
+    await loadUsers();
+    showToast(`Role updated to ${editingRole}`);
+  } else { showToast(res?.data?.error||'Failed to update role','red'); }
+}
+
+/* ── Toggle active via real API ── */
+function confirmToggle(id){
+  const u=users.find(x=>x.id===id);if(!u)return;
+  pendingToggleId=id;
+  document.getElementById('confirmIcon').textContent=u.is_active?'🔒':'🔓';
+  document.getElementById('confirmTitle').textContent=u.is_active?'Deactivate Account':'Activate Account';
+  document.getElementById('confirmMsg').textContent=u.is_active
+    ?`This will immediately revoke ${u.username}'s access. JWT token will be invalidated.`
+    :`This will restore ${u.username}'s access with their existing role (${u.role}).`;
+  const btn=document.getElementById('confirmBtn');
+  btn.textContent=u.is_active?'DEACTIVATE':'ACTIVATE';
+  btn.className=u.is_active?'btn btn-red':'btn btn-ghost';
+  document.getElementById('confirmModal').classList.add('open');
+}
+async function confirmAction(){
+  const res=await Users.toggle(pendingToggleId);
+  if(res&&res.status===200){
+    document.getElementById('confirmModal').classList.remove('open');
+    await loadUsers();
+    const u=users.find(x=>x.id===pendingToggleId);
+    showToast(`User ${res.data.user?.username} ${res.data.user?.is_active?'activated':'deactivated'}`);
+  } else { showToast(res?.data?.error||'Failed to toggle user','red'); }
+}
+
+function showToast(msg,type='green'){
+  const t=document.getElementById('toast');
+  t.style.borderColor=type==='green'?'var(--green-accent)':'var(--red-accent)';
+  t.style.color=type==='green'?'var(--green-accent)':'var(--red-accent)';
+  document.getElementById('toastMsg').textContent=msg;
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+function exportUsers(){
+  const rows=users.map(u=>[u.id,u.username,u.email,u.role,u.is_active?'active':'inactive',u.created_at||'—',u.last_login||'Never'].join(','));
+  const csv=['ID,Username,Email,Role,Status,Created,LastLogin',...rows].join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`ssod_users_${Date.now()}.csv`;a.click();
+  URL.revokeObjectURL(url);
+}
+
+loadUsers();
+</script>
+</body>
+</html>
