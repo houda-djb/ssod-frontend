@@ -1,9 +1,8 @@
-
 const _apiSignature = {
     id: "SSOD-SYL-2026-B4E7",
     author: "SYLVAH™",
     created: "2026-04-04",
-    version: "2.0.0",
+    version: "2.1.0",
     module: "api.js",
     hash: "a3f7c2d9e1b4a8f6"
 };
@@ -16,7 +15,7 @@ function removeToken()    {
     localStorage.removeItem("ssod_user");
 }
 
-/* ── Core fetch wrapper ── */
+/* ── Core fetch wrapper with cold-start timeout handling ── */
 async function apiCall(endpoint, method = "GET", body = null) {
     const headers = {
         "Content-Type": "application/json",
@@ -25,8 +24,14 @@ async function apiCall(endpoint, method = "GET", body = null) {
     const options = { method, headers };
     if (body) options.body = JSON.stringify(body);
 
+    // FIX: 60s timeout to handle Render free tier cold starts
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
+    options.signal = controller.signal;
+
     try {
         const response = await fetch(`${API_BASE}${endpoint}`, options);
+        clearTimeout(timeoutId);
         const data = await response.json();
 
         if (response.status === 401) {
@@ -37,6 +42,14 @@ async function apiCall(endpoint, method = "GET", body = null) {
 
         return { status: response.status, data };
     } catch (err) {
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError') {
+            console.warn("[SSOD API] Request timed out — server may be waking up.");
+            return {
+                status: 0,
+                data: { error: "Server is waking up, please wait 30 seconds and try again." }
+            };
+        }
         console.error(`[SSOD API] ${method} ${endpoint} failed:`, err);
         return { status: 0, data: { error: "Connection failed — is the backend running?" } };
     }

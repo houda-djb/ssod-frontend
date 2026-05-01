@@ -17,11 +17,7 @@ function getUser() {
     return raw ? JSON.parse(raw) : null;
 }
 
-/* ── Auth state ──
-   isLoggedIn = has a REAL JWT token (not demo, not null)
-   isDemo     = browsing without account
-   A real logged-in user is NEVER in demo mode
-*/
+
 function isLoggedIn() {
     const token = getToken();
     // Must have a token AND not be in demo mode
